@@ -51,18 +51,6 @@
     font-size: 0.85rem;
   }
 
-  .badge-demo {
-    display: inline-block;
-    margin-left: 10px;
-    padding: 2px 8px;
-    background: var(--seal);
-    color: white;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    border-radius: 4px;
-    vertical-align: middle;
-  }
 
   main {
     max-width: 640px;
@@ -347,46 +335,132 @@
     pointer-events: none;
   }
   .toast.activo { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  [hidden] { display: none !important; }
+
+  .header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .session-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 0.85rem; }
+  .session-bar .link-sutil { color: var(--paper); }
+
+  .login-card { max-width: 380px; margin: 40px auto; }
+  .login-card h2 { font-family: 'Source Serif 4', serif; margin-bottom: 18px; color: var(--ink); }
+  .field-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+  .text-field {
+    width: 100%; padding: 12px 14px; margin-bottom: 16px;
+    border: 1.5px solid var(--line); border-radius: 8px;
+    font-size: 1rem; background: white; color: var(--text);
+  }
+  .text-field:focus { outline: none; border-color: var(--ink); }
+  .form-error { color: var(--seal); font-size: 0.85rem; min-height: 1.2em; margin-bottom: 12px; }
+
+  .admin-section { margin-bottom: 36px; }
+  .admin-section h2 { font-family: 'Source Serif 4', serif; font-size: 1.15rem; color: var(--ink); margin-bottom: 12px; }
+  .create-user { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 10px; align-items: start; }
+  .create-user .text-field { margin-bottom: 0; }
+  .table-wrap { overflow-x: auto; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: white; border: 1.5px solid var(--line); border-radius: 8px; }
+  table.data th, table.data td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.data th { color: var(--ink-soft); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .btn-small { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; background: var(--paper-dim); color: var(--ink); border: 1px solid var(--line); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; background: var(--paper-dim); }
+  .tag.bad { color: var(--seal); }
+  .tag.good { color: var(--ok); }
+
+  .temp-pin {
+    font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; letter-spacing: 0.35em;
+    text-align: center; padding: 16px 0 16px 0.35em; margin: 12px 0;
+    background: var(--paper-dim); border-radius: 8px; color: var(--ink);
+  }
+  @media (max-width: 640px) { .create-user { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Firma de Decretos de Pago<span class="badge-demo" id="badge-demo" style="display:none">DATOS DE PRUEBA</span></h1>
-  <p>Consulta quién tiene un decreto y registra la firma de recepción</p>
+  <div class="header-row">
+    <div>
+      <h1>Firma de Decretos de Pago</h1>
+      <p>Consulta quién tiene un decreto y registra la firma de recepción</p>
+    </div>
+    <div class="session-bar" id="session-bar" hidden>
+      <span id="session-name"></span>
+      <button class="link-sutil" id="btn-admin" hidden>Administración</button>
+      <button class="link-sutil" id="btn-open-change-pin">Cambiar mi PIN</button>
+      <button class="link-sutil" id="btn-logout">Salir</button>
+    </div>
+  </div>
 </header>
 
 <main>
-  <div class="buscar">
-    <input type="text" id="input-decreto" placeholder="ID del decreto, ej: DP-2026-0453" autocomplete="off" />
-    <button class="btn-primary" id="btn-buscar">Consultar</button>
-  </div>
+  <!-- Login -->
+  <section id="view-login" hidden>
+    <div class="card login-card">
+      <h2>Ingresar</h2>
+      <label class="field-label" for="login-rut">RUT</label>
+      <input class="text-field" id="login-rut" type="text" placeholder="12345678-9" autocomplete="username" />
+      <label class="field-label" for="login-pin">PIN (4 dígitos)</label>
+      <input class="text-field" id="login-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="current-password" />
+      <div class="form-error" id="login-error"></div>
+      <button class="btn-seal" id="btn-login">Ingresar</button>
+    </div>
+  </section>
 
-  <div class="acceso-rapido">
-    <button class="link-sutil" id="link-cambiar-pin">Cambiar mi PIN</button>
-  </div>
-
-  <div id="pista-demo" style="display:none; font-size:0.8rem; color:var(--text-mute); margin:-18px 0 24px; font-family:'JetBrains Mono',monospace">
-    Prueba con <strong>DP-2026-0001</strong> · usuarios: 11111111-1 (PIN 1111), 22222222-2 (PIN 2222), 33333333-3 (PIN 0007)
-  </div>
-
-  <div id="estado-vacio">Ingresa el ID de un decreto para ver su estado.</div>
-  <div id="estado-error"></div>
-
-  <div id="resultado" style="display:none">
-    <div class="card">
-      <div class="eyebrow">Decreto</div>
-      <div class="decreto-id" id="r-decreto-id"></div>
-
-      <div class="eyebrow" style="margin-bottom:10px">Actualmente en poder de</div>
-      <div id="r-tenedor"></div>
-
-      <button class="btn-seal" id="btn-firmar" style="margin-top:16px">Firmar este decreto</button>
+  <!-- Decretos -->
+  <section id="view-main" hidden>
+    <div class="buscar">
+      <input type="text" id="input-decreto" placeholder="ID del decreto, ej: DP-2026-0453" autocomplete="off" maxlength="40" />
+      <button class="btn-primary" id="btn-buscar">Consultar</button>
     </div>
 
-    <div class="historial-titulo">Historial de firmas</div>
-    <div id="r-historial"></div>
-  </div>
+    <div id="estado-vacio">Ingresa el ID de un decreto para ver su estado.</div>
+    <div id="estado-error"></div>
+
+    <div id="resultado" style="display:none">
+      <div class="card">
+        <div class="eyebrow">Decreto</div>
+        <div class="decreto-id" id="r-decreto-id"></div>
+        <div class="eyebrow" style="margin-bottom:10px">Actualmente en poder de</div>
+        <div id="r-tenedor"></div>
+        <button class="btn-seal" id="btn-firmar" style="margin-top:16px">Firmar este decreto</button>
+      </div>
+      <div class="historial-titulo">Historial de firmas</div>
+      <div id="r-historial"></div>
+    </div>
+  </section>
+
+  <!-- Administración -->
+  <section id="view-admin" hidden>
+    <div class="admin-section">
+      <h2>Agregar usuario</h2>
+      <div class="create-user">
+        <input class="text-field" id="new-user-rut" type="text" placeholder="RUT, ej: 12345678-9" />
+        <input class="text-field" id="new-user-name" type="text" placeholder="Nombre completo" maxlength="100" />
+        <button class="btn-primary" id="btn-create-user">Crear</button>
+      </div>
+      <div class="form-error" id="admin-error" style="margin-top:10px"></div>
+    </div>
+
+    <div class="admin-section">
+      <h2>Usuarios</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Nombre</th><th>RUT</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h2>Últimos accesos</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Fecha</th><th>RUT ingresado</th><th>Resultado</th><th>IP</th></tr></thead>
+          <tbody id="access-log-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </main>
 
 <!-- Modal de firma -->
@@ -394,11 +468,7 @@
   <div class="modal">
     <h2>Firmar decreto</h2>
     <div class="sub" id="modal-decreto-id"></div>
-
-    <label for="select-usuario">Quién firma</label>
-    <select id="select-usuario"></select>
-
-    <label>PIN (4 dígitos)</label>
+    <label>Confirma con tu PIN (4 dígitos)</label>
     <div class="pin-boxes">
       <input type="password" inputmode="numeric" maxlength="1" class="pin-box" />
       <input type="password" inputmode="numeric" maxlength="1" class="pin-box" />
@@ -406,7 +476,6 @@
       <input type="password" inputmode="numeric" maxlength="1" class="pin-box" />
     </div>
     <div class="modal-error" id="modal-error"></div>
-
     <div class="modal-acciones">
       <button class="btn-text" id="btn-cancelar">Cancelar</button>
       <button class="btn-seal" id="btn-confirmar-firma">Confirmar firma</button>
@@ -418,433 +487,37 @@
 <div class="overlay" id="overlay-cambiar-pin">
   <div class="modal">
     <h2>Cambiar mi PIN</h2>
-    <div class="sub" id="cambiar-pin-sub">Actualiza tu PIN de firma.</div>
-
-    <div id="cambiar-pin-usuario-fijo" style="display:none; font-weight:600; margin-bottom:16px"></div>
-    <select id="select-usuario-cambiar-pin" style="margin-bottom:16px"></select>
-
+    <div class="sub" id="cambiar-pin-sub"></div>
     <label>PIN actual</label>
     <input type="password" inputmode="numeric" maxlength="4" class="campo-pin" id="cp-pin-actual" placeholder="••••" />
-
     <label>PIN nuevo (4 dígitos)</label>
     <input type="password" inputmode="numeric" maxlength="4" class="campo-pin" id="cp-pin-nuevo" placeholder="••••" />
-
     <label>Confirmar PIN nuevo</label>
     <input type="password" inputmode="numeric" maxlength="4" class="campo-pin" id="cp-pin-confirmar" placeholder="••••" style="margin-bottom:0" />
-
     <div class="modal-error" id="cambiar-pin-error"></div>
-
     <div class="modal-acciones">
-      <button class="btn-text" id="btn-cambiar-pin-cancelar">Ahora no</button>
+      <button class="btn-text" id="btn-cambiar-pin-cancelar">Cancelar</button>
       <button class="btn-seal" id="btn-cambiar-pin-guardar">Guardar PIN nuevo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de PIN temporal (se muestra una sola vez) -->
+<div class="overlay" id="overlay-temp-pin">
+  <div class="modal">
+    <h2>PIN temporal</h2>
+    <div class="sub" id="temp-pin-sub"></div>
+    <div class="temp-pin" id="temp-pin-value"></div>
+    <div class="sub" style="margin-bottom:8px">Este PIN se muestra <strong>una sola vez</strong>. La persona deberá cambiarlo en su primer ingreso.</div>
+    <div class="modal-acciones">
+      <button class="btn-text" id="btn-temp-pin-close">Cerrar</button>
+      <button class="btn-seal" id="btn-temp-pin-copy">Copiar PIN</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script>
-  // Detecta automáticamente si estás probando local (wrangler dev en :8787)
-  // o en producción. Reemplaza la URL de producción por la de tu Worker desplegado.
-  const ES_LOCAL = ['localhost', '127.0.0.1', ''].includes(location.hostname);
-  const API_BASE = ES_LOCAL
-    ? 'http://127.0.0.1:8787'
-    : 'https://decretos-firma-api.dfuentes-e72.workers.dev';
-
-  // ─────────────────────────────────────────────────────────────
-  // MODO DEMO: true = usa datos de prueba en memoria (sin backend,
-  // sin wrangler, sin Cloudflare). Cámbialo a false cuando quieras
-  // probar contra el Worker real (local o desplegado).
-  // ─────────────────────────────────────────────────────────────
-  const MODO_DEMO = false;
-
-  if (MODO_DEMO) {
-    document.getElementById('badge-demo').style.display = 'inline-block';
-    document.getElementById('pista-demo').style.display = 'block';
-  }
-
-  let demoUsuarios = [
-    { rut: '11111111-1', nombre: 'Ana Torres', pin: '1111', requiere_cambio_pin: true, intentos: 0, bloqueadoHasta: null },
-    { rut: '22222222-2', nombre: 'Bruno Salinas', pin: '2222', requiere_cambio_pin: true, intentos: 0, bloqueadoHasta: null },
-    { rut: '33333333-3', nombre: 'Carla Muñoz', pin: '0007', requiere_cambio_pin: false, intentos: 0, bloqueadoHasta: null },
-  ];
-
-  let demoDecretos = {
-    'DP-2026-0001': {
-      tenedorActual: '33333333-3',
-      historial: [
-        { rut_firmante: '11111111-1', nombre_firmante: 'Ana Torres', fecha_hora: '2026-08-18T09:12:03' },
-        { rut_firmante: '33333333-3', nombre_firmante: 'Carla Muñoz', fecha_hora: '2026-08-20T14:47:21' },
-      ],
-    },
-  };
-
-  const demoEspera = (ms = 200) => new Promise((r) => setTimeout(r, ms));
-
-  async function demoObtenerUsuarios() {
-    await demoEspera(120);
-    return demoUsuarios.map((u) => ({ rut: u.rut, nombre: u.nombre }));
-  }
-
-  async function demoConsultarDecreto(id) {
-    await demoEspera(120);
-    const d = demoDecretos[id];
-    if (!d) return { id, tenedor_actual: null, historial: [] };
-    const tenedor = demoUsuarios.find((u) => u.rut === d.tenedorActual);
-    return {
-      id,
-      tenedor_actual: tenedor ? { rut: tenedor.rut, nombre: tenedor.nombre } : null,
-      historial: [...d.historial].sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora)),
-    };
-  }
-
-  async function demoFirmar(id, rut, pin) {
-    await demoEspera(200);
-    const u = demoUsuarios.find((x) => x.rut === rut);
-    if (!u) return { ok: false, error: 'Usuario no autorizado' };
-    if (u.bloqueadoHasta && new Date(u.bloqueadoHasta) > new Date()) {
-      return { ok: false, error: `Cuenta bloqueada temporalmente hasta ${u.bloqueadoHasta}` };
-    }
-    if (pin !== u.pin) {
-      u.intentos += 1;
-      if (u.intentos >= 5) u.bloqueadoHasta = new Date(Date.now() + 15 * 60000).toISOString();
-      return { ok: false, error: 'PIN incorrecto' };
-    }
-    u.intentos = 0;
-    u.bloqueadoHasta = null;
-
-    if (!demoDecretos[id]) demoDecretos[id] = { tenedorActual: null, historial: [] };
-    demoDecretos[id].tenedorActual = rut;
-    const fechaHora = new Date().toISOString();
-    demoDecretos[id].historial.push({ rut_firmante: rut, nombre_firmante: u.nombre, fecha_hora: fechaHora });
-
-    return {
-      ok: true,
-      data: {
-        decreto_id: id,
-        tenedor_actual: { rut, nombre: u.nombre },
-        fecha_hora: fechaHora,
-        requiere_cambio_pin: u.requiere_cambio_pin,
-      },
-    };
-  }
-
-  async function demoCambiarPin(rut, pinActual, pinNuevo) {
-    await demoEspera(150);
-    const u = demoUsuarios.find((x) => x.rut === rut);
-    if (!u) return { ok: false, error: 'Usuario no autorizado' };
-    if (pinActual !== u.pin) return { ok: false, error: 'PIN actual incorrecto' };
-    if (pinNuevo === pinActual) return { ok: false, error: 'El PIN nuevo debe ser distinto al actual' };
-    u.pin = pinNuevo;
-    u.requiere_cambio_pin = false;
-    return { ok: true, data: {} };
-  }
-
-  // ─── Capa de acceso a datos: en MODO_DEMO usa las funciones de arriba,
-  // si no, llama al Worker real. El resto de la UI usa siempre estas 4 funciones. ───
-  async function apiObtenerUsuarios() {
-    if (MODO_DEMO) return demoObtenerUsuarios();
-    const res = await fetch(`${API_BASE}/api/usuarios`);
-    return res.json();
-  }
-
-  async function apiConsultarDecreto(id) {
-    if (MODO_DEMO) return demoConsultarDecreto(id);
-    const res = await fetch(`${API_BASE}/api/decreto/${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('No se pudo consultar el decreto');
-    return res.json();
-  }
-
-  async function apiFirmar(id, rut, pin) {
-    if (MODO_DEMO) return demoFirmar(id, rut, pin);
-    const res = await fetch(`${API_BASE}/api/decreto/${encodeURIComponent(id)}/firmar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rut, pin }),
-    });
-    const data = await res.json();
-    return res.ok ? { ok: true, data } : { ok: false, error: data.error };
-  }
-
-  async function apiCambiarPin(rut, pinActual, pinNuevo) {
-    if (MODO_DEMO) return demoCambiarPin(rut, pinActual, pinNuevo);
-    const res = await fetch(`${API_BASE}/api/usuarios/${encodeURIComponent(rut)}/cambiar-pin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin_actual: pinActual, pin_nuevo: pinNuevo }),
-    });
-    const data = await res.json();
-    return res.ok ? { ok: true, data } : { ok: false, error: data.error };
-  }
-
-  const $ = (sel) => document.querySelector(sel);
-
-  const inputDecreto = $('#input-decreto');
-  const btnBuscar = $('#btn-buscar');
-  const estadoVacio = $('#estado-vacio');
-  const estadoError = $('#estado-error');
-  const resultado = $('#resultado');
-  const rDecretoId = $('#r-decreto-id');
-  const rTenedor = $('#r-tenedor');
-  const rHistorial = $('#r-historial');
-  const btnFirmar = $('#btn-firmar');
-
-  const overlay = $('#overlay');
-  const modalDecretoId = $('#modal-decreto-id');
-  const selectUsuario = $('#select-usuario');
-  const pinBoxes = [...document.querySelectorAll('.pin-box')];
-  const modalError = $('#modal-error');
-  const btnCancelar = $('#btn-cancelar');
-  const btnConfirmarFirma = $('#btn-confirmar-firma');
-  const toast = $('#toast');
-
-  const linkCambiarPin = $('#link-cambiar-pin');
-  const overlayCambiarPin = $('#overlay-cambiar-pin');
-  const cambiarPinSub = $('#cambiar-pin-sub');
-  const usuarioCambiarPinFijo = $('#cambiar-pin-usuario-fijo');
-  const selectUsuarioCambiarPin = $('#select-usuario-cambiar-pin');
-  const cpPinActual = $('#cp-pin-actual');
-  const cpPinNuevo = $('#cp-pin-nuevo');
-  const cpPinConfirmar = $('#cp-pin-confirmar');
-  const cambiarPinError = $('#cambiar-pin-error');
-  const btnCambiarPinCancelar = $('#btn-cambiar-pin-cancelar');
-  const btnCambiarPinGuardar = $('#btn-cambiar-pin-guardar');
-
-  let decretoActual = null;
-  let usuariosCache = [];
-  let rutFijoCambiarPin = null;
-
-  async function obtenerUsuarios() {
-    try {
-      usuariosCache = await apiObtenerUsuarios();
-    } catch {
-      usuariosCache = [];
-    }
-    return usuariosCache;
-  }
-
-  function nombrePorRut(rut) {
-    const u = usuariosCache.find((x) => x.rut === rut);
-    return u ? u.nombre : rut;
-  }
-
-  async function poblarSelect(selectEl) {
-    const usuarios = await obtenerUsuarios();
-    selectEl.innerHTML = usuarios.length
-      ? usuarios.map((u) => `<option value="${u.rut}">${u.nombre}</option>`).join('')
-      : '<option value="">No hay usuarios</option>';
-  }
-
-  function iniciales(nombre) {
-    return nombre.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
-  }
-
-  function formatearFecha(iso) {
-    const d = new Date(iso);
-    const fecha = d.toLocaleDateString('es-CL');
-    const hora = d.toLocaleTimeString('es-CL', { hour12: false });
-    return `${fecha} · ${hora}`;
-  }
-
-  function mostrarToast(msg) {
-    toast.textContent = msg;
-    toast.classList.add('activo');
-    setTimeout(() => toast.classList.remove('activo'), 2600);
-  }
-
-  async function cargarDecreto(id) {
-    estadoError.style.display = 'none';
-    resultado.style.display = 'none';
-    estadoVacio.textContent = 'Buscando…';
-    estadoVacio.style.display = 'block';
-
-    try {
-      const data = await apiConsultarDecreto(id);
-      decretoActual = data;
-      pintarResultado(data);
-    } catch (err) {
-      estadoVacio.style.display = 'none';
-      estadoError.textContent = 'No se pudo conectar con el servidor. Verifica la URL de la API.';
-      estadoError.style.display = 'block';
-    }
-  }
-
-  function pintarResultado(data) {
-    estadoVacio.style.display = 'none';
-    resultado.style.display = 'block';
-
-    rDecretoId.textContent = data.id;
-
-    if (data.tenedor_actual) {
-      rTenedor.innerHTML = `
-        <div class="tenedor">
-          <div class="avatar">${iniciales(data.tenedor_actual.nombre)}</div>
-          <div class="info">
-            <div class="nombre">${data.tenedor_actual.nombre}</div>
-            <div class="rut">${data.tenedor_actual.rut}</div>
-          </div>
-        </div>`;
-    } else {
-      rTenedor.innerHTML = `<div class="tenedor sin-tenedor">Este decreto aún no ha sido firmado por nadie</div>`;
-    }
-
-    if (data.historial.length === 0) {
-      rHistorial.innerHTML = '<div class="sin-historial">Sin firmas registradas todavía.</div>';
-    } else {
-      rHistorial.innerHTML = `<div class="ledger">${data.historial.map((f) => `
-        <div class="firma-item">
-          <div class="marca">${iniciales(f.nombre_firmante)}</div>
-          <div class="detalle">
-            <div class="nombre">${f.nombre_firmante}</div>
-            <div class="meta">${f.rut_firmante} · ${formatearFecha(f.fecha_hora)}</div>
-          </div>
-        </div>`).join('')}</div>`;
-    }
-  }
-
-  async function abrirModalFirma() {
-    if (!decretoActual) return;
-    modalDecretoId.textContent = `Decreto ${decretoActual.id}`;
-    modalError.textContent = '';
-    pinBoxes.forEach((b) => (b.value = ''));
-
-    await poblarSelect(selectUsuario);
-
-    overlay.classList.add('activo');
-    pinBoxes[0].focus();
-  }
-
-  function abrirModalCambiarPin({ rutFijo = null, forzado = false } = {}) {
-    cambiarPinError.textContent = '';
-    cpPinActual.value = '';
-    cpPinNuevo.value = '';
-    cpPinConfirmar.value = '';
-    rutFijoCambiarPin = rutFijo;
-
-    if (rutFijo) {
-      selectUsuarioCambiarPin.style.display = 'none';
-      usuarioCambiarPinFijo.style.display = 'block';
-      usuarioCambiarPinFijo.textContent = nombrePorRut(rutFijo);
-    } else {
-      selectUsuarioCambiarPin.style.display = 'block';
-      usuarioCambiarPinFijo.style.display = 'none';
-      poblarSelect(selectUsuarioCambiarPin);
-    }
-
-    cambiarPinSub.textContent = forzado
-      ? 'Firmaste con tu PIN inicial (los últimos 4 dígitos de tu RUT). Por seguridad, crea uno personal que solo tú conozcas.'
-      : 'Actualiza tu PIN de firma. Nadie más podrá verlo.';
-    cambiarPinSub.classList.toggle('aviso', forzado);
-
-    overlayCambiarPin.classList.add('activo');
-    cpPinActual.focus();
-  }
-
-  function cerrarModalCambiarPin() {
-    overlayCambiarPin.classList.remove('activo');
-  }
-
-  async function confirmarCambioPin() {
-    const rut = rutFijoCambiarPin || selectUsuarioCambiarPin.value;
-    const pinActual = cpPinActual.value.trim();
-    const pinNuevo = cpPinNuevo.value.trim();
-    const pinConfirmar = cpPinConfirmar.value.trim();
-
-    if (!rut) { cambiarPinError.textContent = 'Selecciona quién eres.'; return; }
-    if (!/^\d{4}$/.test(pinActual)) { cambiarPinError.textContent = 'Ingresa tu PIN actual (4 dígitos).'; return; }
-    if (!/^\d{4}$/.test(pinNuevo)) { cambiarPinError.textContent = 'El PIN nuevo debe tener 4 dígitos.'; return; }
-    if (pinNuevo !== pinConfirmar) { cambiarPinError.textContent = 'Los PIN nuevos no coinciden.'; return; }
-
-    btnCambiarPinGuardar.disabled = true;
-    cambiarPinError.textContent = '';
-
-    try {
-      const { ok, error } = await apiCambiarPin(rut, pinActual, pinNuevo);
-
-      if (!ok) {
-        cambiarPinError.textContent = error || 'No se pudo cambiar el PIN.';
-        return;
-      }
-
-      cerrarModalCambiarPin();
-      mostrarToast('PIN actualizado. Úsalo la próxima vez que firmes.');
-    } catch {
-      cambiarPinError.textContent = 'No se pudo conectar con el servidor.';
-    } finally {
-      btnCambiarPinGuardar.disabled = false;
-    }
-  }
-
-  function cerrarModal() {
-    overlay.classList.remove('activo');
-  }
-
-  pinBoxes.forEach((box, i) => {
-    box.addEventListener('input', () => {
-      box.value = box.value.replace(/\D/g, '').slice(0, 1);
-      if (box.value && i < pinBoxes.length - 1) pinBoxes[i + 1].focus();
-    });
-    box.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !box.value && i > 0) pinBoxes[i - 1].focus();
-    });
-  });
-
-  async function confirmarFirma() {
-    const pin = pinBoxes.map((b) => b.value).join('');
-    if (pin.length !== 4) {
-      modalError.textContent = 'Ingresa los 4 dígitos del PIN.';
-      return;
-    }
-    const rut = selectUsuario.value;
-    if (!rut) {
-      modalError.textContent = 'Selecciona quién firma.';
-      return;
-    }
-
-    btnConfirmarFirma.disabled = true;
-    modalError.textContent = '';
-
-    try {
-      const { ok, data, error } = await apiFirmar(decretoActual.id, rut, pin);
-
-      if (!ok) {
-        modalError.textContent = error || 'No se pudo firmar el decreto.';
-        pinBoxes.forEach((b) => (b.value = ''));
-        pinBoxes[0].focus();
-        return;
-      }
-
-      cerrarModal();
-      mostrarToast('Decreto firmado correctamente');
-      cargarDecreto(decretoActual.id);
-
-      if (data.requiere_cambio_pin) {
-        setTimeout(() => abrirModalCambiarPin({ rutFijo: rut, forzado: true }), 400);
-      }
-    } catch {
-      modalError.textContent = 'No se pudo conectar con el servidor.';
-    } finally {
-      btnConfirmarFirma.disabled = false;
-    }
-  }
-
-  btnBuscar.addEventListener('click', () => {
-    const id = inputDecreto.value.trim();
-    if (id) cargarDecreto(id);
-  });
-  inputDecreto.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') btnBuscar.click();
-  });
-  btnFirmar.addEventListener('click', abrirModalFirma);
-  btnCancelar.addEventListener('click', cerrarModal);
-  btnConfirmarFirma.addEventListener('click', confirmarFirma);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrarModal(); });
-
-  linkCambiarPin.addEventListener('click', () => abrirModalCambiarPin());
-  btnCambiarPinCancelar.addEventListener('click', cerrarModalCambiarPin);
-  btnCambiarPinGuardar.addEventListener('click', confirmarCambioPin);
-  overlayCambiarPin.addEventListener('click', (e) => { if (e.target === overlayCambiarPin) cerrarModalCambiarPin(); });
-</script>
-
+<script src="app.js" defer></script>
 </body>
 </html>
