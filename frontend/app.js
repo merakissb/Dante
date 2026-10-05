@@ -133,6 +133,10 @@ async function handleLogin() {
     loginError.textContent = 'Ingresa tu RUT y tu PIN de 4 dígitos.';
     return;
   }
+  if (!isValidRut(rut)) {
+    loginError.textContent = 'El RUT ingresado no es válido. Revisa el dígito verificador.';
+    return;
+  }
 
   btnLogin.disabled = true;
   const { ok, data } = await api('POST', '/api/login', { rut, pin });
@@ -375,6 +379,7 @@ async function handleCreateUser() {
   const name = $('#new-user-name').value.trim();
   adminError.textContent = '';
   if (!rut || !name) { adminError.textContent = 'Ingresa RUT y nombre.'; return; }
+  if (!isValidRut(rut)) { adminError.textContent = 'El RUT ingresado no es válido. Revisa el dígito verificador.'; return; }
 
   const { ok, data } = await api('POST', '/api/admin/users', { rut, name });
   if (!ok) { adminError.textContent = data.error || 'No se pudo crear el usuario.'; return; }
@@ -440,6 +445,21 @@ async function copyTempPin() {
 }
 
 // ─── wiring ────────────────────────────────────────────────
+
+// RUT fields: format while typing (19.572.933-6) and flag an invalid RUT on blur.
+function wireRutField(input, errorEl) {
+  input.addEventListener('input', () => {
+    input.value = formatRut(input.value);
+    if (errorEl.textContent.startsWith('El RUT')) errorEl.textContent = '';
+  });
+  input.addEventListener('blur', () => {
+    if (input.value && !isValidRut(input.value)) {
+      errorEl.textContent = 'El RUT ingresado no es válido. Revisa el dígito verificador.';
+    }
+  });
+}
+wireRutField(loginRut, loginError);
+wireRutField($('#new-user-rut'), adminError);
 
 btnLogin.addEventListener('click', handleLogin);
 loginPin.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });

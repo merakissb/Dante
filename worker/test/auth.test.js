@@ -31,6 +31,18 @@ describe('POST /api/login', () => {
     expect(res.status).toBe(200);
   });
 
+  it('accepts a RUT typed without the hyphen', async () => {
+    const res = await call('POST', '/api/login', { body: { rut: '111111111', pin: '7391' } });
+    expect(res.status).toBe(200);
+  });
+
+  it('still logs hostile text typed in the RUT field, truncated, when it has no usable digits', async () => {
+    await call('POST', '/api/login', { body: { rut: '<script>alert</script>', pin: '0000' } });
+    const [row] = await accessLog();
+    expect(row.result).toBe('unknown_rut');
+    expect(row.rut_attempted).toBe('<script>alert</script>'.slice(0, 20));
+  });
+
   it('gives the same generic 401 for wrong PIN, unknown RUT and inactive account', async () => {
     await seedUser({ rut: '22222222-2', name: 'Off', pin: '5150', isActive: 0 });
     const attempts = [

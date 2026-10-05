@@ -1,5 +1,10 @@
+// Accepts a RUT in any common format (12.345.678-9, 12345678-9, 123456789, with
+// spaces or a lowercase k) and returns the canonical "12345678-9". Anything that
+// is not a digit or K is dropped.
 export function normalizeRut(value) {
-  return String(value || '').replace(/\./g, '').replace(/\s/g, '').toUpperCase();
+  const clean = String(value || '').replace(/[^0-9kK]/g, '').toUpperCase();
+  if (clean.length < 2) return clean;
+  return `${clean.slice(0, -1)}-${clean.slice(-1)}`;
 }
 
 export function isValidRut(rut) {

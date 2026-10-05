@@ -398,7 +398,7 @@
     <div class="card login-card">
       <h2>Ingresar</h2>
       <label class="field-label" for="login-rut">RUT</label>
-      <input class="text-field" id="login-rut" type="text" placeholder="12345678-9" autocomplete="username" />
+      <input class="text-field" id="login-rut" type="text" placeholder="12.345.678-9" maxlength="12" inputmode="text" autocapitalize="characters" autocomplete="username" />
       <label class="field-label" for="login-pin">PIN (4 dígitos)</label>
       <input class="text-field" id="login-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="current-password" />
       <div class="form-error" id="login-error"></div>
@@ -434,7 +434,7 @@
     <div class="admin-section">
       <h2>Agregar usuario</h2>
       <div class="create-user">
-        <input class="text-field" id="new-user-rut" type="text" placeholder="RUT, ej: 12345678-9" />
+        <input class="text-field" id="new-user-rut" type="text" placeholder="RUT, ej: 12.345.678-9" maxlength="12" inputmode="text" autocapitalize="characters" />
         <input class="text-field" id="new-user-name" type="text" placeholder="Nombre completo" maxlength="100" />
         <button class="btn-primary" id="btn-create-user">Crear</button>
       </div>
@@ -519,6 +519,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="rut.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>

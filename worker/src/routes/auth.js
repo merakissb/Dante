@@ -28,13 +28,15 @@ export async function login(request, env) {
 
   const body = await readJson(request);
   const rut = normalizeRut(body.rut);
+  // Audit what was actually typed when it has no usable digits (logAccess truncates it).
+  const rutForLog = rut || String(body.rut ?? '');
   const pin = String(body.pin || '');
   const genericFailure = () => json({ error: 'RUT o PIN incorrecto' }, 401);
 
   const user = await env.DB.prepare('SELECT * FROM users WHERE rut = ?').bind(rut).first();
   if (!user) {
     await hashPin(pin, DUMMY_SALT, getPepper(env));
-    await logAccess(env, request, rut, 'unknown_rut');
+    await logAccess(env, request, rutForLog, 'unknown_rut');
     return genericFailure();
   }
   if (!user.is_active) {
