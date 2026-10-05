@@ -203,6 +203,41 @@ describe('GET /api/admin/access-log', () => {
   });
 });
 
+describe('GET /api/admin/receptions', () => {
+  it('lists every reception across decrees, newest first, with who and when', async () => {
+    const user = await loginAs(USER, '5150');
+    await call('POST', '/api/decrees/DP-1/sign', { token: adminToken, body: { pin: '7391' } });
+    await call('POST', '/api/decrees/DP-2/sign', { token: user, body: { pin: '5150' } });
+    await call('POST', '/api/decrees/dp-1/sign', { token: user, body: { pin: '5150' } });
+
+    const res = await call('GET', '/api/admin/receptions', { token: adminToken });
+    expect(res.status).toBe(200);
+    const { entries } = await res.json();
+    expect(entries.map((e) => [e.decreeId, e.signerRut])).toEqual([
+      ['dp-1', USER],
+      ['dp-2', USER],
+      ['dp-1', ADMIN],
+    ]);
+    expect(entries[0]).toMatchObject({ signerName: 'Regular' });
+    expect(Date.parse(entries[0].signedAt)).not.toBeNaN();
+  });
+
+  it('is admin-only and paginates', async () => {
+    const token = await loginAs(USER, '5150');
+    expect((await call('GET', '/api/admin/receptions', { token })).status).toBe(403);
+
+    await call('POST', '/api/decrees/DP-1/sign', { token: adminToken, body: { pin: '7391' } });
+    await call('POST', '/api/decrees/DP-2/sign', { token: adminToken, body: { pin: '7391' } });
+    await call('POST', '/api/decrees/DP-3/sign', { token: adminToken, body: { pin: '7391' } });
+    const first = await (await call('GET', '/api/admin/receptions?limit=2', { token: adminToken })).json();
+    expect(first.entries).toHaveLength(2);
+    const second = await (
+      await call('GET', `/api/admin/receptions?limit=2&before=${first.nextBefore}`, { token: adminToken })
+    ).json();
+    expect(second.entries.every((e) => e.id < first.nextBefore)).toBe(true);
+  });
+});
+
 describe('sessions table hygiene', () => {
   it('removes expired sessions on the next login', async () => {
     await env.DB.prepare(

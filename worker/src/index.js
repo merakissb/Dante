@@ -3,7 +3,7 @@ import { withCors } from './lib/cors.js';
 import { runGuard } from './lib/auth.js';
 import { login, logout, me, changePin } from './routes/auth.js';
 import { getDecree, signDecree } from './routes/decrees.js';
-import { listUsers, createUser, updateUser, listAccessLog } from './routes/admin.js';
+import { listUsers, createUser, updateUser, listAccessLog, listReceptions } from './routes/admin.js';
 
 // guard: 'public' | 'session' | 'active' | 'admin'  (see lib/auth.js)
 const routes = [
@@ -17,6 +17,7 @@ const routes = [
   { method: 'POST', pattern: /^\/api\/admin\/users$/, guard: 'admin', handler: createUser },
   { method: 'PATCH', pattern: /^\/api\/admin\/users\/([^/]+)$/, guard: 'admin', handler: updateUser },
   { method: 'GET', pattern: /^\/api\/admin\/access-log$/, guard: 'admin', handler: listAccessLog },
+  { method: 'GET', pattern: /^\/api\/admin\/receptions$/, guard: 'admin', handler: listReceptions },
 ];
 
 async function handle(request, env) {

@@ -1,12 +1,14 @@
 import { json, readJson } from '../lib/http.js';
 import { verifyPin } from '../lib/pin.js';
+import { normalizeDecreeId } from '../lib/decree.js';
 
-const DECREE_ID_PATTERN = /^[A-Za-z0-9._-]{1,40}$/;
-const invalidId = () => json({ error: 'ID de decreto inválido' }, 400);
+const invalidId = () => json({ error: 'ID de decreto inválido. Usa el formato DP-1234.' }, 400);
+const alreadyHolder = () =>
+  json({ code: 'already_holder', error: 'Ya tienes este decreto: tú fuiste el último en recibirlo.' }, 409);
 
 export async function getDecree(request, env, { params }) {
-  const [decreeId] = params;
-  if (!DECREE_ID_PATTERN.test(decreeId)) return invalidId();
+  const decreeId = normalizeDecreeId(params[0]);
+  if (!decreeId) return invalidId();
 
   const decree = await env.DB.prepare(
     `SELECT d.id, d.current_holder, u.name AS holder_name
@@ -35,8 +37,14 @@ export async function getDecree(request, env, { params }) {
 }
 
 export async function signDecree(request, env, { user, params }) {
-  const [decreeId] = params;
-  if (!DECREE_ID_PATTERN.test(decreeId)) return invalidId();
+  const decreeId = normalizeDecreeId(params[0]);
+  if (!decreeId) return invalidId();
+
+  // The last receiver cannot confirm again. Checked before the PIN so it neither
+  // asks for it nor counts against the account's attempts.
+  const current = await env.DB.prepare('SELECT current_holder FROM decrees WHERE id = ?')
+    .bind(decreeId).first();
+  if (current && current.current_holder === user.rut) return alreadyHolder();
 
   const body = await readJson(request);
   const outcome = await verifyPin(env, user, String(body.pin || ''));
@@ -45,10 +53,14 @@ export async function signDecree(request, env, { user, params }) {
 
   const signedAt = new Date().toISOString();
 
-  await env.DB.prepare(
+  // Atomic: the holder only changes if it is somebody else. Two simultaneous
+  // confirmations by the same person produce a single history entry.
+  const taken = await env.DB.prepare(
     `INSERT INTO decrees (id, current_holder) VALUES (?, ?)
-     ON CONFLICT(id) DO UPDATE SET current_holder = excluded.current_holder`
+     ON CONFLICT(id) DO UPDATE SET current_holder = excluded.current_holder
+     WHERE decrees.current_holder IS NOT excluded.current_holder`
   ).bind(decreeId, user.rut).run();
+  if (taken.meta.changes === 0) return alreadyHolder();
 
   await env.DB.prepare(
     `INSERT INTO signatures (decree_id, signer_rut, signer_name, signed_at)

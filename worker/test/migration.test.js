@@ -57,3 +57,49 @@ describe('migration 0001 on a populated old-schema database', () => {
     expect((await env.DB.prepare('PRAGMA foreign_key_check').all()).results).toEqual([]);
   });
 });
+
+describe('migration 0002 normalizes decree ids', () => {
+  it('lowercases ids and removes the legacy "1234" test decree, leaving DP-1234 intact', async () => {
+    const byPrefix = (prefix) => env.TEST_MIGRATIONS.find((m) => m.name.startsWith(prefix));
+
+    for (const table of ['signatures', 'decrees', 'sessions', 'access_log', 'users']) {
+      await run(`DROP TABLE IF EXISTS ${table}`);
+    }
+    await applyD1Migrations(env.DB, [byPrefix('0000')], 'rewind2_a');
+    await applyD1Migrations(env.DB, [byPrefix('0001')], 'rewind2_b');
+
+    const matias = '19572933-6';
+    const dante = '19497478-7';
+    for (const [rut, name] of [[matias, 'Matías'], [dante, 'Dante']]) {
+      await run('INSERT INTO users (rut, name, pin_hash, salt) VALUES (?, ?, ?, ?)', rut, name, 'h', 's');
+    }
+    // Production before this migration: Matías used "DP-1234"; Dante typed "1234" (no prefix) twice.
+    await run('INSERT INTO decrees (id, current_holder) VALUES (?, ?)', 'DP-1234', matias);
+    await run('INSERT INTO decrees (id, current_holder) VALUES (?, ?)', '1234', dante);
+    await run('INSERT INTO decrees (id, current_holder) VALUES (?, ?)', 'DP-77', dante);
+    const sig = (decree, rut, name, at) =>
+      run('INSERT INTO signatures (decree_id, signer_rut, signer_name, signed_at) VALUES (?, ?, ?, ?)', decree, rut, name, at);
+    await sig('DP-1234', matias, 'Matías', '2026-10-05T17:02:27.564Z');
+    await sig('1234', dante, 'Dante', '2026-10-05T17:04:45.534Z');
+    await sig('1234', dante, 'Dante', '2026-10-05T17:05:02.452Z');
+    await sig('DP-77', matias, 'Matías', '2026-10-05T17:10:00.000Z');
+    await sig('DP-77', dante, 'Dante', '2026-10-05T17:20:00.000Z');
+
+    await applyD1Migrations(env.DB, [byPrefix('0002')], 'rewind2_c');
+
+    const { results: decrees } = await env.DB.prepare('SELECT id, current_holder FROM decrees ORDER BY id').all();
+    expect(decrees).toEqual([
+      { id: 'dp-1234', current_holder: matias },
+      { id: 'dp-77', current_holder: dante },
+    ]);
+    const { results: signatures } = await env.DB.prepare(
+      'SELECT decree_id, signer_rut FROM signatures ORDER BY id'
+    ).all();
+    expect(signatures).toEqual([
+      { decree_id: 'dp-1234', signer_rut: matias },
+      { decree_id: 'dp-77', signer_rut: matias },
+      { decree_id: 'dp-77', signer_rut: dante },
+    ]);
+    expect((await env.DB.prepare('PRAGMA foreign_key_check').all()).results).toEqual([]);
+  });
+});

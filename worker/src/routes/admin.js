@@ -113,3 +113,28 @@ export async function listAccessLog(request, env) {
     nextBefore: entries.length === limit ? entries[entries.length - 1].id : null,
   });
 }
+
+export async function listReceptions(request, env) {
+  const url = new URL(request.url);
+  const requested = parseInt(url.searchParams.get('limit'), 10);
+  const limit = Math.min(Number.isFinite(requested) && requested > 0 ? requested : DEFAULT_LOG_LIMIT, MAX_LOG_LIMIT);
+  const beforeParam = parseInt(url.searchParams.get('before'), 10);
+  const before = Number.isFinite(beforeParam) ? beforeParam : Number.MAX_SAFE_INTEGER;
+
+  const { results } = await env.DB.prepare(
+    `SELECT id, decree_id, signer_rut, signer_name, signed_at
+     FROM signatures WHERE id < ? ORDER BY id DESC LIMIT ?`
+  ).bind(before, limit).all();
+
+  const entries = results.map((r) => ({
+    id: r.id,
+    decreeId: r.decree_id,
+    signerRut: r.signer_rut,
+    signerName: r.signer_name,
+    signedAt: r.signed_at,
+  }));
+  return json({
+    entries,
+    nextBefore: entries.length === limit ? entries[entries.length - 1].id : null,
+  });
+}
