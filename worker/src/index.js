@@ -50,21 +50,33 @@ function generarSalt() {
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
-export default {
+// Solo estos orígenes pueden llamar a la API desde un navegador.
+// Los localhost son para el entorno Docker de desarrollo.
+const ORIGENES_PERMITIDOS = [
+  'https://dante-frontend-ashen.vercel.app',
+  'http://localhost:8080',
+  'http://127.0.0.1:8080',
+];
+
+function conCors(response, request) {
+  const origen = request.headers.get('Origin');
+  if (ORIGENES_PERMITIDOS.includes(origen)) {
+    response.headers.set('Access-Control-Allow-Origin', origen);
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Vary', 'Origin');
+  }
+  return response;
+}
+
+const api = {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
     const method = request.method;
-
-    if (method === 'OPTIONS') return json({}, 204);
 
     try {
       // --- GET /api/usuarios ---
@@ -285,5 +297,14 @@ export default {
     } catch (err) {
       return json({ error: 'Error interno', detalle: String(err) }, 500);
     }
+  },
+};
+
+export default {
+  async fetch(request, env) {
+    if (request.method === 'OPTIONS') {
+      return conCors(new Response(null, { status: 204 }), request);
+    }
+    return conCors(await api.fetch(request, env), request);
   },
 };
