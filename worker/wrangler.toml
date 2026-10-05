@@ -1,0 +1,12 @@
+name = "decretos-firma-api"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "decretos_firma_db"
+# Para probar SOLO en local no hace falta un ID real ni estar logueado:
+# cualquier UUID sirve, Wrangler lo usa nomás como nombre de archivo local.
+# Cuando despliegues de verdad, reemplázalo por el que te entrega
+# "wrangler d1 create" (eso sí requiere estar logueado).
+database_id = "00000000-0000-0000-0000-000000000000"

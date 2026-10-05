@@ -1,0 +1,3 @@
+# Copia este archivo a ".dev.vars" (sin el .example) para desarrollo local.
+# wrangler dev lo lee automáticamente y NO se sube a producción.
+ADMIN_SECRET=un-secreto-cualquiera-para-pruebas-locales
