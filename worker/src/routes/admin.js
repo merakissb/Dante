@@ -37,15 +37,15 @@ export async function createUser(request, env) {
   if (!name) return json({ error: 'Nombre requerido' }, 400);
   if (name.length > MAX_NAME_LENGTH) return json({ error: 'Nombre demasiado largo' }, 400);
 
-  const existing = await env.DB.prepare('SELECT 1 AS x FROM users WHERE rut = ?').bind(rut).first();
-  if (existing) return json({ error: 'El usuario ya existe' }, 409);
-
   const tempPin = tempPinFor(rut);
   const salt = generateSalt();
-  await env.DB.prepare(
+  const inserted = await env.DB.prepare(
     `INSERT INTO users (rut, name, pin_hash, salt, is_active, must_change_pin, is_admin)
-     VALUES (?, ?, ?, ?, 1, 1, 0)`
+     VALUES (?, ?, ?, ?, 1, 1, 0)
+     ON CONFLICT(rut) DO NOTHING`
   ).bind(rut, name, await hashPin(tempPin, salt, getPepper(env)), salt).run();
+  // Atomic: concurrent creations of one RUT yield a single insert and 409s.
+  if (inserted.meta.changes === 0) return json({ error: 'El usuario ya existe' }, 409);
 
   return json({ ok: true, rut, name, tempPin }, 201);
 }
@@ -69,6 +69,8 @@ export async function updateUser(request, env, { user, params }) {
     await env.DB.prepare('UPDATE users SET is_active = ? WHERE rut = ?')
       .bind(body.isActive ? 1 : 0, rut)
       .run();
+    // Deactivation ends the sessions for good, so reactivating cannot revive old tokens.
+    if (!body.isActive) await env.DB.prepare('DELETE FROM sessions WHERE rut = ?').bind(rut).run();
   }
 
   const result = { ok: true };

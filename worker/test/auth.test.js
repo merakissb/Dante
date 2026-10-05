@@ -136,16 +136,23 @@ describe('sessions', () => {
 });
 
 describe('POST /api/change-pin', () => {
-  it('changes the PIN, clears mustChangePin, and the new PIN logs in', async () => {
+  it('changes the PIN and ends every session, including the current one', async () => {
     await seedUser({ rut: '22222222-2', name: 'New', pin: '5150', mustChangePin: 1 });
-    const token = await loginAs('22222222-2', '5150');
+    const current = await loginAs('22222222-2', '5150');
+    const other = await loginAs('22222222-2', '5150');
     const res = await call('POST', '/api/change-pin', {
-      token,
+      token: current,
       body: { currentPin: '5150', newPin: '8264' },
     });
     expect(res.status).toBe(200);
-    expect((await (await call('GET', '/api/me', { token })).json()).mustChangePin).toBe(false);
-    expect(await loginAs('22222222-2', '8264')).toMatch(/^[0-9a-f]{64}$/);
+
+    // Both sessions are gone: the user must log in again with the new PIN.
+    expect((await call('GET', '/api/me', { token: current })).status).toBe(401);
+    expect((await call('GET', '/api/me', { token: other })).status).toBe(401);
+
+    const fresh = await call('POST', '/api/login', { body: { rut: '22222222-2', pin: '8264' } });
+    expect(fresh.status).toBe(200);
+    expect((await fresh.json()).user.mustChangePin).toBe(false);
     const old = await call('POST', '/api/login', { body: { rut: '22222222-2', pin: '5150' } });
     expect(old.status).toBe(401);
   });
@@ -162,6 +169,19 @@ describe('POST /api/change-pin', () => {
       const res = await call('POST', '/api/change-pin', { token, body });
       expect(res.status).toBe(status);
     }
+  });
+
+  it('rejects weak new PINs: repeated digits, sequences and the last 4 digits of the RUT', async () => {
+    await seedUser({ rut: '19572933-6', name: 'Matias', pin: '7391' });
+    const token = await loginAs('19572933-6', '7391');
+    for (const newPin of ['0000', '7777', '1234', '4321', '0123', '9876', '2933']) {
+      const res = await call('POST', '/api/change-pin', { token, body: { currentPin: '7391', newPin } });
+      expect(res.status, `PIN ${newPin}`).toBe(400);
+    }
+    // Rejections do not end the session or change the PIN.
+    expect((await call('GET', '/api/me', { token })).status).toBe(200);
+    const ok = await call('POST', '/api/change-pin', { token, body: { currentPin: '7391', newPin: '8264' } });
+    expect(ok.status).toBe(200);
   });
 
   it('requires a session', async () => {

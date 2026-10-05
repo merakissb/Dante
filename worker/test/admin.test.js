@@ -98,6 +98,17 @@ describe('POST /api/admin/users', () => {
     }
   });
 
+  it('simultaneous creations of the same RUT give exactly one 201 and 409s, never a 500', async () => {
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        call('POST', '/api/admin/users', { token: adminToken, body: { rut: NEW_RUT, name: 'Race' } })
+      )
+    );
+    const statuses = results.map((r) => r.status).sort();
+    expect(statuses.filter((s) => s === 201)).toHaveLength(1);
+    expect(statuses.filter((s) => s === 409)).toHaveLength(5);
+  });
+
   it('answers 409 when the RUT already exists', async () => {
     const res = await call('POST', '/api/admin/users', {
       token: adminToken,
@@ -115,6 +126,13 @@ describe('PATCH /api/admin/users/:rut', () => {
 
     await call('PATCH', `/api/admin/users/${USER}`, { token: adminToken, body: { isActive: true } });
     expect((await call('POST', '/api/login', { body: { rut: USER, pin: '5150' } })).status).toBe(200);
+  });
+
+  it('deactivating a user ends their sessions for good: reactivating does not revive old tokens', async () => {
+    const userToken = await loginAs(USER, '5150');
+    await call('PATCH', `/api/admin/users/${USER}`, { token: adminToken, body: { isActive: false } });
+    await call('PATCH', `/api/admin/users/${USER}`, { token: adminToken, body: { isActive: true } });
+    expect((await call('GET', '/api/me', { token: userToken })).status).toBe(401);
   });
 
   it('refuses to let an admin deactivate themselves', async () => {

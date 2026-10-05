@@ -42,3 +42,14 @@ export async function verifyPin(env, user, pin) {
   ).bind(user.rut).run();
   return 'ok';
 }
+
+// PINs that are guessed first: repeated digits (0000), straight runs (1234,
+// 4321, 0123) and the last 4 digits of the user's RUT (the old default).
+export function isWeakPin(pin, rut) {
+  if (!/^\d{4}$/.test(pin)) return true;
+  const digits = [...pin].map(Number);
+  const steps = digits.slice(1).map((d, i) => d - digits[i]);
+  if (steps.every((step) => step === 0)) return true;
+  if (steps.every((step) => step === 1) || steps.every((step) => step === -1)) return true;
+  return pin === String(rut).split('-')[0].slice(-4);
+}

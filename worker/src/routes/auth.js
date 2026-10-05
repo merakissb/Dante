@@ -1,7 +1,7 @@
 import { json, readJson } from '../lib/http.js';
 import { normalizeRut } from '../lib/rut.js';
 import { generateSalt, hashPin, hashToken, getPepper } from '../lib/crypto.js';
-import { verifyPin } from '../lib/pin.js';
+import { verifyPin, isWeakPin } from '../lib/pin.js';
 import { createSession, getBearerToken, logAccess } from '../lib/auth.js';
 
 export function userView(user) {
@@ -65,6 +65,12 @@ export async function changePin(request, env, { user }) {
   const newPin = String(body.newPin || '');
 
   if (!/^\d{4}$/.test(newPin)) return json({ error: 'El PIN nuevo debe tener 4 dígitos' }, 400);
+  if (isWeakPin(newPin, user.rut)) {
+    return json(
+      { error: 'Ese PIN es muy fácil de adivinar (repetido, secuencia o parte de tu RUT). Elige otro.' },
+      400
+    );
+  }
 
   const outcome = await verifyPin(env, user, currentPin);
   if (outcome === 'locked') return json({ error: 'Cuenta bloqueada temporalmente' }, 423);
@@ -78,5 +84,8 @@ export async function changePin(request, env, { user }) {
   await env.DB.prepare('UPDATE users SET pin_hash = ?, salt = ?, must_change_pin = 0 WHERE rut = ?')
     .bind(await hashPin(newPin, salt, getPepper(env)), salt, user.rut)
     .run();
+  // A credential change ends every session, including this one: the user logs
+  // in again with the new PIN.
+  await env.DB.prepare('DELETE FROM sessions WHERE rut = ?').bind(user.rut).run();
   return json({ ok: true });
 }
