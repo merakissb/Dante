@@ -2,6 +2,7 @@ import { json } from './lib/http.js';
 import { withCors } from './lib/cors.js';
 import { runGuard } from './lib/auth.js';
 import { login, logout, me, changePin } from './routes/auth.js';
+import { getDecree, signDecree } from './routes/decrees.js';
 
 // guard: 'public' | 'session' | 'active' | 'admin'  (see lib/auth.js)
 const routes = [
@@ -9,6 +10,8 @@ const routes = [
   { method: 'POST', pattern: /^\/api\/logout$/, guard: 'session', handler: logout },
   { method: 'GET', pattern: /^\/api\/me$/, guard: 'session', handler: me },
   { method: 'POST', pattern: /^\/api\/change-pin$/, guard: 'session', handler: changePin },
+  { method: 'GET', pattern: /^\/api\/decrees\/([^/]+)$/, guard: 'active', handler: getDecree },
+  { method: 'POST', pattern: /^\/api\/decrees\/([^/]+)\/sign$/, guard: 'active', handler: signDecree },
 ];
 
 async function handle(request, env) {
