@@ -449,14 +449,14 @@
   const ES_LOCAL = ['localhost', '127.0.0.1', ''].includes(location.hostname);
   const API_BASE = ES_LOCAL
     ? 'http://127.0.0.1:8787'
-    : 'https://decretos-firma-api.TU-SUBDOMINIO.workers.dev';
+    : 'https://decretos-firma-api.dfuentes-e72.workers.dev';
 
   // ─────────────────────────────────────────────────────────────
   // MODO DEMO: true = usa datos de prueba en memoria (sin backend,
   // sin wrangler, sin Cloudflare). Cámbialo a false cuando quieras
   // probar contra el Worker real (local o desplegado).
   // ─────────────────────────────────────────────────────────────
-  const MODO_DEMO = true;
+  const MODO_DEMO = false;
 
   if (MODO_DEMO) {
     document.getElementById('badge-demo').style.display = 'inline-block';

@@ -1,0 +1,32 @@
+# Entorno local 100% en Docker: nada se instala en tu máquina.
+#   docker compose up -d        -> API en :8787, frontend en :8080
+#   docker compose down -v      -> borra todo (contenedores + base local)
+services:
+  api:
+    image: node:22-slim
+    working_dir: /app/worker
+    volumes:
+      - ./worker:/app/worker
+      # El estado local de D1 vive en un volumen, no en tu carpeta.
+      - wrangler-state:/app/worker/.wrangler
+      - npm-cache:/root/.npm
+    ports:
+      - "8787:8787"
+    environment:
+      CI: "true"
+      WRANGLER_SEND_METRICS: "false"
+      ADMIN_SECRET: "un-secreto-cualquiera-para-pruebas-locales"
+    command: >
+      sh -c "npx --yes wrangler@4 d1 execute decretos_firma_db --local --file=./schema.sql &&
+             npx --yes wrangler@4 dev --ip 0.0.0.0 --port 8787 --var ADMIN_SECRET:$$ADMIN_SECRET"
+
+  web:
+    image: nginx:alpine
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+
+volumes:
+  wrangler-state:
+  npm-cache:
