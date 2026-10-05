@@ -1,13 +1,14 @@
-# Firma de Decretos de Pago
+# Recepción de Decretos de Pago
 
-Sistema para consultar quién tiene un decreto de pago y registrar la firma de
-recepción. Backend en Cloudflare Workers + D1, frontend estático en Vercel.
+Sistema para consultar quién tiene un decreto de pago y registrar quién lo recibió
+lo último («yo lo tengo»). Backend en Cloudflare Workers + D1, frontend estático en Vercel.
 Acceso con login (RUT + PIN), rol admin y registro de accesos.
 
 ## Cómo funciona
 
 - **Login:** RUT + PIN de 4 dígitos. La sesión dura 8 horas y vive en la base (D1).
-- **Firmar:** además de estar logueado, se vuelve a pedir el PIN en cada firma.
+- **Confirmar recepción:** además de estar logueado, se vuelve a pedir el PIN cada vez que
+  alguien confirma que tiene un decreto. El último en confirmar queda como quien lo tiene.
 - **PIN temporal:** al crear un usuario (o resetear su PIN) el sistema genera un PIN
   aleatorio de 4 dígitos, se muestra **una sola vez** al admin (con botón *Copiar*),
   y la persona debe cambiarlo en su primer ingreso.

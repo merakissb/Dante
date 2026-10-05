@@ -198,7 +198,7 @@ function renderDecree(data) {
            <div class="rut">${escapeHtml(data.currentHolder.rut)}</div>
          </div>
        </div>`
-    : '<div class="tenedor sin-tenedor">Este decreto aún no ha sido firmado por nadie</div>';
+    : '<div class="tenedor sin-tenedor">Nadie ha registrado todavía la recepción de este decreto</div>';
 
   $('#r-historial').innerHTML = data.history.length
     ? `<div class="ledger">${data.history.map((s) => `
@@ -209,7 +209,7 @@ function renderDecree(data) {
             <div class="meta">${escapeHtml(s.signerRut)} · ${escapeHtml(formatDate(s.signedAt))}</div>
           </div>
         </div>`).join('')}</div>`
-    : '<div class="sin-historial">Sin firmas registradas todavía.</div>';
+    : '<div class="sin-historial">Sin recepciones registradas todavía.</div>';
 }
 
 // ─── sign modal ────────────────────────────────────────────
@@ -262,13 +262,13 @@ async function confirmSign() {
       openChangePin({ forced: true });
       return;
     }
-    signError.textContent = data.error || 'No se pudo firmar el decreto.';
+    signError.textContent = data.error || 'No se pudo registrar la recepción.';
     pinBoxes.forEach((b) => (b.value = ''));
     pinBoxes[0].focus();
     return;
   }
   closeOverlay(overlaySign);
-  showToast('Decreto firmado correctamente');
+  showToast('Recepción registrada: ahora tú tienes este decreto');
   loadDecree(currentDecree.id);
 }
 
@@ -295,7 +295,7 @@ function openChangePin({ forced = false } = {}) {
   const sub = $('#cambiar-pin-sub');
   sub.textContent = forced
     ? 'Estás usando un PIN temporal. Crea un PIN personal que solo tú conozcas para continuar.'
-    : 'Actualiza tu PIN de firma. Nadie más podrá verlo.';
+    : 'Actualiza tu PIN. Nadie más podrá verlo.';
   sub.classList.toggle('aviso', forced);
   openOverlay(overlayChangePin);
   cpCurrent.focus();
