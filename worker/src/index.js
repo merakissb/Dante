@@ -41,16 +41,25 @@ async function handle(request, env) {
   return json({ error: 'Not found' }, 404);
 }
 
+// API responses are private and never meant to be sniffed, cached or leaked
+// through the Referer header.
+function withSecurityHeaders(response) {
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Cache-Control', 'no-store');
+  response.headers.set('Referrer-Policy', 'no-referrer');
+  return response;
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
-      return withCors(new Response(null, { status: 204 }), request);
+      return withSecurityHeaders(withCors(new Response(null, { status: 204 }), request));
     }
     try {
-      return withCors(await handle(request, env), request);
+      return withSecurityHeaders(withCors(await handle(request, env), request));
     } catch (err) {
       console.error(err);
-      return withCors(json({ error: 'Error interno' }, 500), request);
+      return withSecurityHeaders(withCors(json({ error: 'Error interno' }, 500), request));
     }
   },
 };

@@ -2,6 +2,7 @@ import { json, readJson } from '../lib/http.js';
 import { normalizeRut } from '../lib/rut.js';
 import { generateSalt, hashPin, hashToken, getPepper } from '../lib/crypto.js';
 import { verifyPin, isWeakPin } from '../lib/pin.js';
+import { isIpThrottled } from '../lib/throttle.js';
 import { createSession, getBearerToken, logAccess } from '../lib/auth.js';
 
 export function userView(user) {
@@ -15,7 +16,16 @@ export function userView(user) {
 
 const minutesLeft = (until) => Math.max(1, Math.ceil((new Date(until) - Date.now()) / 60000));
 
+// Used to spend the same hashing time on RUTs that do not exist, so response
+// timing does not reveal which RUTs are registered.
+const DUMMY_SALT = '00000000000000000000000000000000';
+
 export async function login(request, env) {
+  if (await isIpThrottled(env, request.headers.get('CF-Connecting-IP'))) {
+    await logAccess(env, request, 'throttled', 'throttled');
+    return json({ error: 'Demasiados intentos desde tu red. Intenta de nuevo en unos minutos.' }, 429);
+  }
+
   const body = await readJson(request);
   const rut = normalizeRut(body.rut);
   const pin = String(body.pin || '');
@@ -23,10 +33,12 @@ export async function login(request, env) {
 
   const user = await env.DB.prepare('SELECT * FROM users WHERE rut = ?').bind(rut).first();
   if (!user) {
+    await hashPin(pin, DUMMY_SALT, getPepper(env));
     await logAccess(env, request, rut, 'unknown_rut');
     return genericFailure();
   }
   if (!user.is_active) {
+    await hashPin(pin, DUMMY_SALT, getPepper(env));
     await logAccess(env, request, rut, 'inactive_account');
     return genericFailure();
   }
