@@ -188,7 +188,16 @@ async function loadDecree(id) {
 function renderDecree(data) {
   stateEmpty.style.display = 'none';
   resultBox.style.display = 'block';
-  $('#r-decreto-id').textContent = data.id;
+  $('#r-decreto-id').textContent = data.id.toUpperCase();
+
+  // The last receiver cannot confirm again: show a notice instead of the button.
+  const iAmHolder = Boolean(data.currentHolder) && data.currentHolder.rut === session.user.rut;
+  const holderNotice = $('#already-holder');
+  holderNotice.hidden = !iAmHolder;
+  holderNotice.textContent = iAmHolder
+    ? `Tú tienes este decreto desde el ${formatDate(data.history[0].signedAt)}.`
+    : '';
+  $('#btn-firmar').hidden = iAmHolder;
 
   $('#r-tenedor').innerHTML = data.currentHolder
     ? `<div class="tenedor">
@@ -221,7 +230,7 @@ const btnConfirmSign = $('#btn-confirmar-firma');
 
 function openSignModal() {
   if (!currentDecree) return;
-  $('#modal-decreto-id').textContent = `Decreto ${currentDecree.id}`;
+  $('#modal-decreto-id').textContent = `Decreto ${currentDecree.id.toUpperCase()}`;
   signError.textContent = '';
   pinBoxes.forEach((b) => (b.value = ''));
   openOverlay(overlaySign);
@@ -260,6 +269,12 @@ async function confirmSign() {
     if (data.code === 'pin_change_required') {
       closeOverlay(overlaySign);
       openChangePin({ forced: true });
+      return;
+    }
+    if (data.code === 'already_holder') {
+      closeOverlay(overlaySign);
+      showToast(data.error);
+      loadDecree(currentDecree.id);
       return;
     }
     signError.textContent = data.error || 'No se pudo registrar la recepción.';
@@ -332,7 +347,7 @@ const adminError = $('#admin-error');
 async function openAdmin() {
   adminError.textContent = '';
   showView('admin');
-  await Promise.all([loadUsers(), loadAccessLog()]);
+  await Promise.all([loadUsers(), loadReceptions(), loadAccessLog()]);
 }
 
 async function loadUsers() {
@@ -361,6 +376,16 @@ async function loadUsers() {
       </td>
     </tr>`;
   }).join('');
+}
+
+async function loadReceptions() {
+  const { ok, data } = await api('GET', '/api/admin/receptions?limit=50');
+  if (!ok) return;
+  $('#receptions-body').innerHTML = data.entries.map((e) => `<tr>
+    <td>${escapeHtml(formatDate(e.signedAt))}</td>
+    <td class="mono">${escapeHtml(e.decreeId.toUpperCase())}</td>
+    <td>${escapeHtml(e.signerName)} <span class="mono">${escapeHtml(e.signerRut)}</span></td>
+  </tr>`).join('') || '<tr><td colspan="3">Sin recepciones registradas.</td></tr>';
 }
 
 async function loadAccessLog() {
@@ -467,9 +492,19 @@ loginRut.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginPin.fo
 $('#btn-logout').addEventListener('click', handleLogout);
 
 $('#btn-buscar').addEventListener('click', () => {
-  const id = inputDecree.value.trim();
-  if (id) loadDecree(id);
+  const raw = inputDecree.value.trim();
+  if (!raw) return;
+  const id = normalizeDecreeId(raw);
+  if (!id) {
+    resultBox.style.display = 'none';
+    stateEmpty.style.display = 'none';
+    stateError.textContent = 'ID inválido. Usa el formato DP-1234 (DP- y solo números).';
+    stateError.style.display = 'block';
+    return;
+  }
+  loadDecree(id);
 });
+inputDecree.addEventListener('input', () => { inputDecree.value = inputDecree.value.toUpperCase(); });
 inputDecree.addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#btn-buscar').click(); });
 
 $('#btn-firmar').addEventListener('click', openSignModal);

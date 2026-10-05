@@ -372,6 +372,12 @@
     text-align: center; padding: 16px 0 16px 0.35em; margin: 12px 0;
     background: var(--paper-dim); border-radius: 8px; color: var(--ink);
   }
+  #input-decreto { text-transform: uppercase; }
+  .already-holder {
+    margin-top: 16px; padding: 12px 14px; border-radius: 8px;
+    background: var(--paper-dim); border: 1.5px solid var(--line);
+    color: var(--ok); font-weight: 600; font-size: 0.9rem;
+  }
   @media (max-width: 640px) { .create-user { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -409,7 +415,7 @@
   <!-- Decretos -->
   <section id="view-main" hidden>
     <div class="buscar">
-      <input type="text" id="input-decreto" placeholder="ID del decreto, ej: DP-2026-0453" autocomplete="off" maxlength="40" />
+      <input type="text" id="input-decreto" placeholder="ID del decreto, ej: DP-1234" autocomplete="off" maxlength="11" autocapitalize="characters" />
       <button class="btn-primary" id="btn-buscar">Consultar</button>
     </div>
 
@@ -422,6 +428,7 @@
         <div class="decreto-id" id="r-decreto-id"></div>
         <div class="eyebrow" style="margin-bottom:10px">Actualmente en poder de</div>
         <div id="r-tenedor"></div>
+        <div class="already-holder" id="already-holder" hidden></div>
         <button class="btn-seal" id="btn-firmar" style="margin-top:16px">Confirmar recepción: yo lo tengo</button>
       </div>
       <div class="historial-titulo">Historial de recepciones</div>
@@ -447,6 +454,16 @@
         <table class="data">
           <thead><tr><th>Nombre</th><th>RUT</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h2>Últimas recepciones</h2>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Fecha</th><th>Decreto</th><th>Recibido por</th></tr></thead>
+          <tbody id="receptions-body"></tbody>
         </table>
       </div>
     </div>
@@ -520,6 +537,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="rut.js" defer></script>
+<script src="decree-id.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>
