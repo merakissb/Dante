@@ -342,6 +342,9 @@ async function loadUsers() {
         : u.mustChangePin
           ? '<span class="tag">PIN temporal</span>'
           : '<span class="tag good">Activo</span>';
+    // An admin cannot reset or deactivate their own account here: a self reset
+    // deletes their own session, so the temporary PIN could never be seen.
+    // They use "Cambiar mi PIN" instead.
     const isSelf = u.rut === session.user.rut;
     return `<tr>
       <td>${escapeHtml(u.name)}${u.isAdmin ? ' <span class="tag">admin</span>' : ''}</td>
@@ -349,7 +352,7 @@ async function loadUsers() {
       <td>${status}</td>
       <td>
         ${isSelf ? '' : `<button class="btn-small" data-action="toggle" data-rut="${escapeHtml(u.rut)}" data-active="${u.isActive}">${u.isActive ? 'Desactivar' : 'Activar'}</button>`}
-        <button class="btn-small" data-action="reset" data-rut="${escapeHtml(u.rut)}" data-name="${escapeHtml(u.name)}">Resetear PIN</button>
+        ${isSelf ? '' : `<button class="btn-small" data-action="reset" data-rut="${escapeHtml(u.rut)}" data-name="${escapeHtml(u.name)}">Resetear PIN</button>`}
       </td>
     </tr>`;
   }).join('');

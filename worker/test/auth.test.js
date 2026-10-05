@@ -169,3 +169,41 @@ describe('POST /api/change-pin', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('lockout under concurrency', () => {
+  it('parallel wrong PINs cannot bypass the lockout', async () => {
+    const burst = await Promise.all(
+      Array.from({ length: 40 }, () => call('POST', '/api/login', { body: { rut: ANA, pin: '2846' } }))
+    );
+    // Only 5 guesses may actually be checked; the rest must be rejected as locked.
+    expect(burst.filter((r) => r.status === 401)).toHaveLength(5);
+    expect(burst.filter((r) => r.status === 423)).toHaveLength(35);
+
+    const right = await call('POST', '/api/login', { body: { rut: ANA, pin: '7391' } });
+    expect(right.status).toBe(423);
+  });
+
+  it('parallel guesses that include the correct PIN still only check 5 PINs', async () => {
+    const pins = ['0001', '0002', '0003', '0004', '0005', '0006', '0007', '7391', '0008', '0009'];
+    const burst = await Promise.all(
+      pins.map((pin) => call('POST', '/api/login', { body: { rut: ANA, pin } }))
+    );
+    const checked = burst.filter((r) => r.status !== 423);
+    expect(checked.length).toBeLessThanOrEqual(5);
+  });
+
+  it('after the lock expires, one wrong PIN starts a fresh window instead of re-locking', async () => {
+    await env.DB.prepare(
+      'UPDATE users SET failed_attempts = 5, locked_until = ? WHERE rut = ?'
+    ).bind(new Date(Date.now() - 60000).toISOString(), ANA).run();
+
+    const wrong = await call('POST', '/api/login', { body: { rut: ANA, pin: '2846' } });
+    expect(wrong.status).toBe(401);
+    const row = await env.DB.prepare('SELECT failed_attempts, locked_until FROM users WHERE rut = ?').bind(ANA).first();
+    expect(row.failed_attempts).toBe(1);
+    expect(row.locked_until).toBeNull();
+
+    const right = await call('POST', '/api/login', { body: { rut: ANA, pin: '7391' } });
+    expect(right.status).toBe(200);
+  });
+});

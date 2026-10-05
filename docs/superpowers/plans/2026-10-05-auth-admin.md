@@ -2653,6 +2653,20 @@ curl -s -m 20 -X POST $U/api/login -H 'Content-Type: application/json' -d '{"rut
 ```
 Expected: `404`, `401`, preflight `204` con `access-control-allow-origin` del dominio de Vercel, y login con `{"error":"RUT o PIN incorrecto"}`. (Un intento fallido queda en `access_log`; es esperado.)
 
+- [ ] **Step 6b: Cerrar la ventana del PIN adivinable** (hallazgo de la revisión final)
+
+La migración conserva los hashes: hasta que Matías y Dante cambien su PIN, el vigente son los últimos 4 dígitos de su RUT, y cualquiera que conozca el RUT podría entrar y quedarse con la cuenta admin. Inmediatamente después del deploy del Worker (y **antes** de publicar el frontend), resetear ambos con la llave de emergencia, sin imprimir el secreto:
+
+```bash
+U=https://decretos-firma-api.dfuentes-e72.workers.dev
+for rut in 19572933-6 19497478-7; do
+  curl -s -m 20 -X PATCH "$U/api/admin/users/$rut" \
+    -H "Authorization: Bearer $ADMIN_SECRET_PROD" -H "Content-Type: application/json" \
+    -d '{"resetPin": true}'; echo
+done
+```
+Expected: dos líneas `{"ok":true,"tempPin":"NNNN"}`. Entregar a cada persona su PIN temporal por un canal aparte; cada uno lo cambia en su primer ingreso.
+
 - [ ] **Step 7: Merge a `main` y push** (confirmar con el usuario)
 
 Run:
@@ -2668,9 +2682,9 @@ Expected: la primera línea es `'use strict';`.
 
 - [ ] **Step 9: Prueba manual en producción con el usuario**
 
-  1. Matías entra a https://dante-frontend-ashen.vercel.app/ con RUT `19572933-6` y su PIN actual (`2933` si no lo había cambiado) → modal forzado de cambio de PIN.
-  2. Tras cambiarlo, "Administración" → **Resetear PIN** de Dante → copiar el PIN nuevo y entregárselo.
-  3. Dante entra con ese PIN, lo cambia, consulta y firma un decreto de prueba.
+  1. Matías entra a https://dante-frontend-ashen.vercel.app/ con RUT `19572933-6` y el PIN temporal del Step 6b → modal forzado de cambio de PIN.
+  2. Dante entra con su PIN temporal del Step 6b, lo cambia, consulta y firma un decreto de prueba.
+  3. Matías, desde "Administración", crea un usuario de prueba y verifica que el PIN temporal se muestra con el botón **Copiar**.
   4. En "Últimos accesos" aparecen todos los intentos, sin PIN.
 
 - [ ] **Step 10: Limpieza de seguridad**
