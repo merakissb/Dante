@@ -17,7 +17,12 @@ Acceso con login (RUT + PIN), rol admin y registro de accesos.
 - **Registro de accesos** (`access_log`): fecha, RUT ingresado, resultado
   (`ok`, `wrong_pin`, `locked`, `unknown_rut`, `inactive_account`), IP y navegador.
   **Nunca se guarda el PIN.**
-- Tras 5 PIN incorrectos la cuenta se bloquea 15 minutos.
+- Tras 5 PIN incorrectos la cuenta se bloquea 15 minutos (el intento se reserva de forma
+  atómica, así que ráfagas en paralelo no esquivan el límite). Además, 30 intentos fallidos
+  desde una misma IP en 15 minutos bloquean esa IP (`429`).
+- **Cambiar el PIN cierra todas las sesiones**, incluida la actual. Se rechazan PIN débiles
+  (`0000`, `1234`, `4321`…) y los últimos 4 dígitos del RUT. Desactivar a un usuario o
+  resetear su PIN también cierra sus sesiones.
 - `ADMIN_SECRET` queda como llave de emergencia para `/api/admin/*` (por `curl`).
 
 ## Desarrollo local (todo en Docker, sin instalar nada)
@@ -38,7 +43,13 @@ Las credenciales de Cloudflare van en `.env` (ignorado por git):
 ```
 WORKER_TOKEN=<API token de Cloudflare con Workers Scripts:Edit y D1:Edit>
 ADMIN_SECRET_PROD=<clave larga, la misma que `wrangler secret put ADMIN_SECRET`>
+PIN_PEPPER_PROD=<cadena aleatoria larga, la misma que `wrangler secret put PIN_PEPPER`>
 ```
+
+`PIN_PEPPER` es una "pimienta" secreta que se mezcla (HMAC) con cada PIN antes de guardarlo.
+Vive solo como secreto del Worker, nunca en la base: una copia filtrada de la base no basta
+para adivinar los 10.000 PIN posibles. **Si se pierde o cambia, nadie puede ingresar** hasta
+que el admin resetee los PIN. Sin ella configurada, el Worker rechaza los logins.
 
 ```bash
 set -a && . ./.env && set +a && export CLOUDFLARE_API_TOKEN="$WORKER_TOKEN"
@@ -61,8 +72,13 @@ curl -X POST https://decretos-firma-api.dfuentes-e72.workers.dev/api/admin/users
 
 ## Seguridad: lo que está y lo que no
 
-- El PIN se guarda con hash + sal; el token de sesión, solo su SHA-256.
-- Un PIN de 4 dígitos es débil frente a fuerza bruta distribuida; la defensa es el
-  bloqueo por cuenta (que además permite bloquear cuentas ajenas). No hay límite por
-  IP ni segundo factor. Si las firmas tienen peso legal, conviene sumarlos.
+- El PIN se guarda como HMAC-SHA256 con sal por usuario y pimienta secreta; el token de
+  sesión, solo su SHA-256. Las comparaciones son en tiempo constante.
+- Las respuestas de la API llevan `Cache-Control: no-store`, `nosniff` y
+  `Referrer-Policy: no-referrer`; el frontend se sirve con CSP estricta, `frame-ancestors 'none'`,
+  HSTS y demás cabeceras (`frontend/vercel.json`).
+- Si cambias de proveedor o dominio del Worker, actualiza `connect-src` en `frontend/vercel.json`.
+- Un PIN de 4 dígitos sigue siendo débil por naturaleza. Las defensas son el bloqueo por
+  cuenta, el límite por IP y la pimienta; no hay segundo factor. Si las firmas tienen peso
+  legal, conviene sumar uno (código por correo o Cloudflare Access).
 - Trata `ADMIN_SECRET` y el token de Cloudflare como contraseñas maestras.

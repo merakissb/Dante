@@ -2603,16 +2603,15 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 Run: `docker compose run --rm test && git status --short`
 Expected: todas las pruebas PASS; árbol de trabajo limpio.
 
-- [ ] **Step 2: Respaldo de la base remota** (el archivo contiene hashes de PIN: dejarlo fuera del repo)
+- [ ] **Step 2: Punto de restauración (D1 Time Travel)**
 
-Run:
+D1 guarda 30 días de historial y permite volver a cualquier minuto, así que no hace falta exportar la base (el export además dejaría un archivo con hashes de PIN). Solo se anota el momento exacto previo a la migración:
+
 ```bash
-cd /home/meraki/dante && set -a && . ./.env && set +a && export CLOUDFLARE_API_TOKEN="$WORKER_TOKEN"
-mkdir -p /tmp/claude-1000/-home-meraki-dante/81332ac4-e5c1-4658-b9b8-3a6a785c68e7/scratchpad/backup
-docker run --rm -e CLOUDFLARE_API_TOKEN -e CI=true -v "$PWD/worker":/app -v /tmp/claude-1000/-home-meraki-dante/81332ac4-e5c1-4658-b9b8-3a6a785c68e7/scratchpad/backup:/backup -w /app node:22-slim npx --yes wrangler@4 d1 export decretos_firma_db --remote --output /backup/pre-auth.sql
-ls -l /tmp/claude-1000/-home-meraki-dante/81332ac4-e5c1-4658-b9b8-3a6a785c68e7/scratchpad/backup/pre-auth.sql
+docker run --rm -e CLOUDFLARE_API_TOKEN -e CI=true -v "$PWD/worker":/app -w /app node:22-slim npx --yes wrangler@4 d1 time-travel info decretos_firma_db 2>&1 | tail -5
+date -u +%Y-%m-%dT%H:%M:%SZ
 ```
-Expected: archivo `pre-auth.sql` no vacío.
+Expected: muestra un `bookmark` actual. Anotar el bookmark y la hora UTC. Para deshacer: `wrangler d1 time-travel restore decretos_firma_db --bookmark=<bookmark>`.
 
 - [ ] **Step 3: Aplicar las migraciones en la D1 remota** (antes de desplegar el Worker nuevo)
 
@@ -2631,6 +2630,17 @@ docker run --rm -e CLOUDFLARE_API_TOKEN -e CI=true -v "$PWD/worker":/app -w /app
 Expected: Dante (`19497478-7`, `is_admin = 0`) y Matías (`19572933-6`, `is_admin = 1`), ambos `is_active = 1` y `must_change_pin = 1`.
 
 Si la migración falla a medias: **parar**, no desplegar, y restaurar/diagnosticar con el respaldo del Step 2.
+
+- [ ] **Step 4b: Subir la pimienta de PIN como secreto** (antes del deploy; sin ella el Worker nuevo rechaza todos los logins)
+
+Generar una pimienta aleatoria, guardarla en `.env` (sin imprimirla) y subirla por stdin:
+
+```bash
+grep -q '^PIN_PEPPER_PROD=' .env || printf 'PIN_PEPPER_PROD=%s\n' "$(openssl rand -hex 32)" >> .env
+set -a && . ./.env && set +a && export CLOUDFLARE_API_TOKEN="$WORKER_TOKEN"
+printf %s "$PIN_PEPPER_PROD" | docker run --rm -i -e CLOUDFLARE_API_TOKEN -e CI=true -v "$PWD/worker":/app -w /app node:22-slim npx --yes wrangler@4 secret put PIN_PEPPER 2>&1 | tail -3
+```
+Expected: `Success! Uploaded secret PIN_PEPPER`. Los hashes actuales (sin pimienta) dejan de ser válidos: por eso el Step 6b resetea a los dos usuarios.
 
 - [ ] **Step 5: Desplegar el Worker**
 
@@ -2655,7 +2665,7 @@ Expected: `404`, `401`, preflight `204` con `access-control-allow-origin` del do
 
 - [ ] **Step 6b: Cerrar la ventana del PIN adivinable** (hallazgo de la revisión final)
 
-La migración conserva los hashes: hasta que Matías y Dante cambien su PIN, el vigente son los últimos 4 dígitos de su RUT, y cualquiera que conozca el RUT podría entrar y quedarse con la cuenta admin. Inmediatamente después del deploy del Worker (y **antes** de publicar el frontend), resetear ambos con la llave de emergencia, sin imprimir el secreto:
+Los hashes migrados no incluyen la pimienta, así que ninguno de los dos puede ingresar con su PIN antiguo (que además era adivinable: los últimos 4 dígitos de su RUT). Inmediatamente después del deploy del Worker (y **antes** de publicar el frontend), resetear ambos con la llave de emergencia, sin imprimir el secreto:
 
 ```bash
 U=https://decretos-firma-api.dfuentes-e72.workers.dev

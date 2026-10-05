@@ -19,10 +19,11 @@ services:
       CI: "true"
       WRANGLER_SEND_METRICS: "false"
       ADMIN_SECRET: "un-secreto-cualquiera-para-pruebas-locales"
+      PIN_PEPPER: "pimienta-local-solo-para-pruebas"
     command: >
       sh -c "npm install --no-audit --no-fund &&
              npx wrangler d1 migrations apply decretos_firma_db --local &&
-             npx wrangler dev --ip 0.0.0.0 --port 8787 --var ADMIN_SECRET:$$ADMIN_SECRET"
+             npx wrangler dev --ip 0.0.0.0 --port 8787 --var ADMIN_SECRET:$$ADMIN_SECRET --var PIN_PEPPER:$$PIN_PEPPER"
 
   test:
     profiles: ["test"]

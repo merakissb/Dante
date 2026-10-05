@@ -12,6 +12,7 @@ const RESULT_LABELS = {
   locked: 'Cuenta bloqueada',
   unknown_rut: 'RUT no registrado',
   inactive_account: 'Cuenta inactiva',
+  throttled: 'Bloqueado por demasiados intentos desde la IP',
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -276,6 +277,7 @@ const cpConfirm = $('#cp-pin-confirmar');
 const cpError = $('#cambiar-pin-error');
 const btnCpCancel = $('#btn-cambiar-pin-cancelar');
 const btnCpSave = $('#btn-cambiar-pin-guardar');
+const btnCpLogout = $('#btn-cambiar-pin-salir');
 let changePinForced = false;
 
 function openChangePin({ forced = false } = {}) {
@@ -285,6 +287,7 @@ function openChangePin({ forced = false } = {}) {
   cpNew.value = '';
   cpConfirm.value = '';
   btnCpCancel.hidden = forced;
+  btnCpLogout.hidden = !forced;
   const sub = $('#cambiar-pin-sub');
   sub.textContent = forced
     ? 'Estás usando un PIN temporal. Crea un PIN personal que solo tú conozcas para continuar.'
@@ -311,11 +314,9 @@ async function confirmChangePin() {
     cpError.textContent = data.error || 'No se pudo cambiar el PIN.';
     return;
   }
-  session.user.mustChangePin = false;
-  saveSession();
+  // Changing the PIN ends every session (also this one): log in again.
   changePinForced = false;
-  closeOverlay(overlayChangePin);
-  showToast('PIN actualizado.');
+  endSession('PIN actualizado. Ingresa con tu nuevo PIN.');
 }
 
 // ─── admin ─────────────────────────────────────────────────
@@ -459,6 +460,7 @@ overlaySign.addEventListener('click', (e) => { if (e.target === overlaySign) clo
 $('#btn-open-change-pin').addEventListener('click', () => openChangePin());
 btnCpCancel.addEventListener('click', () => closeOverlay(overlayChangePin));
 btnCpSave.addEventListener('click', confirmChangePin);
+btnCpLogout.addEventListener('click', handleLogout);
 overlayChangePin.addEventListener('click', (e) => {
   if (e.target === overlayChangePin && !changePinForced) closeOverlay(overlayChangePin);
 });
