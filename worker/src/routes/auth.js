@@ -21,8 +21,10 @@ const minutesLeft = (until) => Math.max(1, Math.ceil((new Date(until) - Date.now
 const DUMMY_SALT = '00000000000000000000000000000000';
 
 export async function login(request, env) {
+  // A throttled request costs one read and no writes: D1's free plan allows far
+  // fewer writes per day (100k) than reads (5M), so an IP that keeps hammering
+  // must not be able to burn the write quota by filling the audit log.
   if (await isIpThrottled(env, request.headers.get('CF-Connecting-IP'))) {
-    await logAccess(env, request, 'throttled', 'throttled');
     return json({ error: 'Demasiados intentos desde tu red. Intenta de nuevo en unos minutos.' }, 429);
   }
 

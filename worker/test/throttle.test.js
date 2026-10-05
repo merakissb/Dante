@@ -35,8 +35,17 @@ describe('per-IP login throttle', () => {
     await recordFailures(IP, 30);
     const res = await login(IP);
     expect(res.status).toBe(429);
-    const log = await env.DB.prepare('SELECT result FROM access_log ORDER BY id DESC LIMIT 1').first();
-    expect(log.result).toBe('throttled');
+  });
+
+  it('writes nothing while throttled, so one IP cannot burn the daily D1 write quota', async () => {
+    await recordFailures(IP, 30);
+    const count = async () =>
+      (await env.DB.prepare('SELECT COUNT(*) AS n FROM access_log').first()).n;
+    const before = await count();
+    for (let i = 0; i < 5; i++) expect((await login(IP)).status).toBe(429);
+    expect(await count()).toBe(before);
+    const sessions = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions').first();
+    expect(sessions.n).toBe(0);
   });
 
   it('does not affect other IPs', async () => {

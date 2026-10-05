@@ -12,7 +12,6 @@ const RESULT_LABELS = {
   locked: 'Cuenta bloqueada',
   unknown_rut: 'RUT no registrado',
   inactive_account: 'Cuenta inactiva',
-  throttled: 'Bloqueado por demasiados intentos desde la IP',
 };
 
 const $ = (selector) => document.querySelector(selector);

@@ -1,8 +1,8 @@
 export const MAX_FAILED_PER_IP = 30;
 export const THROTTLE_WINDOW_MINUTES = 15;
 
-// Results that count against an IP. Successful logins and throttled attempts
-// do not, so a throttled IP recovers once its window passes.
+// Results that count against an IP. Successful logins do not, and throttled
+// attempts are not recorded at all, so a throttled IP recovers once its window passes.
 const FAILURE_RESULTS = ['wrong_pin', 'unknown_rut', 'inactive_account', 'locked'];
 
 // Slows down distributed guessing and RUT enumeration from one address using
