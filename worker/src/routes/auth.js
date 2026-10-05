@@ -1,6 +1,6 @@
 import { json, readJson } from '../lib/http.js';
 import { normalizeRut } from '../lib/rut.js';
-import { generateSalt, hashPin, hashToken } from '../lib/crypto.js';
+import { generateSalt, hashPin, hashToken, getPepper } from '../lib/crypto.js';
 import { verifyPin } from '../lib/pin.js';
 import { createSession, getBearerToken, logAccess } from '../lib/auth.js';
 
@@ -76,7 +76,7 @@ export async function changePin(request, env, { user }) {
 
   const salt = generateSalt();
   await env.DB.prepare('UPDATE users SET pin_hash = ?, salt = ?, must_change_pin = 0 WHERE rut = ?')
-    .bind(await hashPin(newPin, salt), salt, user.rut)
+    .bind(await hashPin(newPin, salt, getPepper(env)), salt, user.rut)
     .run();
   return json({ ok: true });
 }

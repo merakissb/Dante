@@ -1,13 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import {
-  hashPin, generateSalt, generateToken, hashToken, generateTempPin,
+  hashPin, generateSalt, generateToken, hashToken, generateTempPin, getPepper, timingSafeEqualHex,
 } from '../src/lib/crypto.js';
 
 describe('crypto helpers', () => {
   it('hashPin is deterministic and depends on the salt', async () => {
-    expect(await hashPin('1234', 'aa')).toBe(await hashPin('1234', 'aa'));
-    expect(await hashPin('1234', 'aa')).not.toBe(await hashPin('1234', 'bb'));
-    expect(await hashPin('1234', 'aa')).toMatch(/^[0-9a-f]{64}$/);
+    expect(await hashPin('1234', 'aa', 'pepper')).toBe(await hashPin('1234', 'aa', 'pepper'));
+    expect(await hashPin('1234', 'aa', 'pepper')).not.toBe(await hashPin('1234', 'bb', 'pepper'));
+    expect(await hashPin('1234', 'aa', 'pepper')).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('hashPin depends on the secret pepper, so a database leak alone cannot be brute-forced', async () => {
+    expect(await hashPin('1234', 'aa', 'pepper-one')).not.toBe(await hashPin('1234', 'aa', 'pepper-two'));
+  });
+
+  it('getPepper fails closed when the secret is not configured', () => {
+    expect(getPepper({ PIN_PEPPER: 'x' })).toBe('x');
+    expect(() => getPepper({})).toThrow();
+    expect(() => getPepper({ PIN_PEPPER: '' })).toThrow();
+  });
+
+  it('timingSafeEqualHex compares equal-length strings and rejects anything else', () => {
+    expect(timingSafeEqualHex('abc123', 'abc123')).toBe(true);
+    expect(timingSafeEqualHex('abc123', 'abc124')).toBe(false);
+    expect(timingSafeEqualHex('abc', 'abc123')).toBe(false);
+    expect(timingSafeEqualHex('', '')).toBe(true);
   });
 
   it('generateSalt returns 32 hex chars and is not constant', () => {

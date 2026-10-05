@@ -1,5 +1,5 @@
 import { env, exports } from 'cloudflare:workers';
-import { generateSalt, hashPin } from '../src/lib/crypto.js';
+import { generateSalt, hashPin, getPepper } from '../src/lib/crypto.js';
 
 export const ADMIN_SECRET = 'test-admin-secret';
 
@@ -28,7 +28,7 @@ export async function seedUser({
   isActive = 1,
 }) {
   const salt = generateSalt();
-  const pinHash = await hashPin(pin, salt);
+  const pinHash = await hashPin(pin, salt, getPepper(env));
   await env.DB.prepare(
     `INSERT INTO users (rut, name, pin_hash, salt, is_active, must_change_pin, is_admin)
      VALUES (?, ?, ?, ?, ?, ?, ?)`

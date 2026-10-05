@@ -1,6 +1,6 @@
 import { json, readJson } from '../lib/http.js';
 import { normalizeRut, isValidRut } from '../lib/rut.js';
-import { generateSalt, hashPin, generateTempPin } from '../lib/crypto.js';
+import { generateSalt, hashPin, generateTempPin, getPepper } from '../lib/crypto.js';
 
 const MAX_NAME_LENGTH = 100;
 const DEFAULT_LOG_LIMIT = 100;
@@ -45,7 +45,7 @@ export async function createUser(request, env) {
   await env.DB.prepare(
     `INSERT INTO users (rut, name, pin_hash, salt, is_active, must_change_pin, is_admin)
      VALUES (?, ?, ?, ?, 1, 1, 0)`
-  ).bind(rut, name, await hashPin(tempPin, salt), salt).run();
+  ).bind(rut, name, await hashPin(tempPin, salt, getPepper(env)), salt).run();
 
   return json({ ok: true, rut, name, tempPin }, 201);
 }
@@ -79,7 +79,7 @@ export async function updateUser(request, env, { user, params }) {
       `UPDATE users
        SET pin_hash = ?, salt = ?, must_change_pin = 1, failed_attempts = 0, locked_until = NULL
        WHERE rut = ?`
-    ).bind(await hashPin(tempPin, salt), salt, rut).run();
+    ).bind(await hashPin(tempPin, salt, getPepper(env)), salt, rut).run();
     await env.DB.prepare('DELETE FROM sessions WHERE rut = ?').bind(rut).run();
     result.tempPin = tempPin;
   }

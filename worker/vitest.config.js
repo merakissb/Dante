@@ -8,7 +8,11 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: './wrangler.toml' },
         miniflare: {
-          bindings: { TEST_MIGRATIONS: migrations, ADMIN_SECRET: 'test-admin-secret' },
+          bindings: {
+            TEST_MIGRATIONS: migrations,
+            ADMIN_SECRET: 'test-admin-secret',
+            PIN_PEPPER: 'test-pepper',
+          },
         },
       }),
     ],

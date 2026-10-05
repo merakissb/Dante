@@ -1,4 +1,4 @@
-import { hashPin } from './crypto.js';
+import { hashPin, getPepper, timingSafeEqualHex } from './crypto.js';
 
 export const MAX_FAILED_ATTEMPTS = 5;
 export const LOCK_MINUTES = 15;
@@ -30,7 +30,9 @@ export async function verifyPin(env, user, pin) {
 
   if (!reserved) return 'locked';
 
-  const valid = /^\d{4}$/.test(pin) && (await hashPin(pin, user.salt)) === user.pin_hash;
+  const valid =
+    /^\d{4}$/.test(pin) &&
+    timingSafeEqualHex(await hashPin(pin, user.salt, getPepper(env)), user.pin_hash);
   if (!valid) return 'wrong';
 
   // Success clears the counter, but never lifts a lock that a concurrent

@@ -1,5 +1,5 @@
 import { json } from './http.js';
-import { generateToken, hashToken, sha256Hex } from './crypto.js';
+import { generateToken, hashToken, sha256Hex, timingSafeEqualHex } from './crypto.js';
 
 export const SESSION_HOURS = 8;
 
@@ -51,7 +51,7 @@ async function isAdminSecret(request, env) {
   const token = getBearerToken(request);
   if (!token || !env.ADMIN_SECRET) return false;
   const [a, b] = await Promise.all([sha256Hex(token), sha256Hex(env.ADMIN_SECRET)]);
-  return a === b;
+  return timingSafeEqualHex(a, b);
 }
 
 // Guards:
