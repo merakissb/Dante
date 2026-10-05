@@ -184,9 +184,9 @@ describe('POST /api/change-pin', () => {
   });
 
   it('rejects weak new PINs: repeated digits, sequences and the last 4 digits of the RUT', async () => {
-    await seedUser({ rut: '19572933-6', name: 'Matias', pin: '7391' });
-    const token = await loginAs('19572933-6', '7391');
-    for (const newPin of ['0000', '7777', '1234', '4321', '0123', '9876', '2933']) {
+    await seedUser({ rut: '10000013-K', name: 'Persona', pin: '7391' });
+    const token = await loginAs('10000013-K', '7391');
+    for (const newPin of ['0000', '7777', '1234', '4321', '0123', '9876', '0013']) {
       const res = await call('POST', '/api/change-pin', { token, body: { currentPin: '7391', newPin } });
       expect(res.status, `PIN ${newPin}`).toBe(400);
     }

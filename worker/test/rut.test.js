@@ -3,12 +3,12 @@ import { normalizeRut, isValidRut } from '../src/lib/rut.js';
 
 describe('normalizeRut', () => {
   it('removes dots and spaces and uppercases the check digit', () => {
-    expect(normalizeRut('19.572.933-6')).toBe('19572933-6');
+    expect(normalizeRut('33.333.333-3')).toBe('33333333-3');
     expect(normalizeRut(' 10.000.013-k ')).toBe('10000013-K');
   });
   it('accepts a RUT typed without the hyphen, with or without dots', () => {
-    expect(normalizeRut('195729336')).toBe('19572933-6');
-    expect(normalizeRut('19.572.9336')).toBe('19572933-6');
+    expect(normalizeRut('333333333')).toBe('33333333-3');
+    expect(normalizeRut('33.333.3333')).toBe('33333333-3');
     expect(normalizeRut('10000013k')).toBe('10000013-K');
     expect(normalizeRut('12345678 5')).toBe('12345678-5');
   });

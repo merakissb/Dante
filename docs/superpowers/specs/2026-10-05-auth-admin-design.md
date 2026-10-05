@@ -5,8 +5,8 @@ Fecha: 2026-10-05 · Estado: pendiente de revisión
 ## Objetivo
 
 Que solo personas autorizadas entren al sistema de firma de decretos, que quede
-registro de quién intentó ingresar, y que un admin (Matías Quiroz, RUT
-`19572933-6`) pueda administrar usuarios desde la app, sin `curl`.
+registro de quién intentó ingresar, y que un admin (la persona administradora inicial, RUT
+`33333333-3`) pueda administrar usuarios desde la app, sin `curl`.
 
 ## Alcance
 
@@ -56,7 +56,7 @@ local y luego en remoto. Conserva los usuarios existentes.
 ### Columnas y tablas nuevas
 
 - `users.is_admin INTEGER NOT NULL DEFAULT 0`. La migración marca a
-  `19572933-6` con `is_admin = 1`.
+  `33333333-3` con `is_admin = 1`.
 - `sessions`: `token_hash TEXT PRIMARY KEY` (SHA-256 del token aleatorio de 32
   bytes), `rut TEXT NOT NULL` (FK a `users`), `created_at TEXT NOT NULL`,
   `expires_at TEXT NOT NULL`. Duración: 8 horas.

@@ -470,7 +470,7 @@ async function copyTempPin() {
 
 // ─── wiring ────────────────────────────────────────────────
 
-// RUT fields: format while typing (19.572.933-6) and flag an invalid RUT on blur.
+// RUT fields: format while typing (33.333.333-3) and flag an invalid RUT on blur.
 function wireRutField(input, errorEl) {
   input.addEventListener('input', () => {
     input.value = formatRut(input.value);

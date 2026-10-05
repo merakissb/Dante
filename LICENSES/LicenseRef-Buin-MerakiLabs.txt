@@ -1,0 +1,36 @@
+Licencia de Uso Municipal con Reconocimiento de Autoría (BORRADOR)
+SPDX: LicenseRef-Buin-MerakiLabs
+
+Copyright (c) 2026 Municipalidad de Buin (titular).
+Autoría y desarrollo: MerakiLabs.
+
+Este texto es un borrador de buena fe. No es asesoría legal; se recomienda
+que un abogado lo revise antes de darlo por definitivo.
+
+1. TITULAR Y AUTORÍA. La titularidad de este software corresponde a la
+   Municipalidad de Buin. MerakiLabs es el autor del desarrollo y conserva el
+   derecho a ser reconocido como tal.
+
+2. USO PERMITIDO. La Municipalidad de Buin puede usar, copiar, modificar y
+   operar este software para sus fines institucionales.
+
+3. LECTURA PÚBLICA. El código es público para que cualquiera pueda leerlo y
+   auditarlo. Leerlo no otorga derecho a usarlo, copiarlo, modificarlo,
+   redistribuirlo ni operarlo, salvo autorización escrita del titular.
+
+4. RECONOCIMIENTO. Toda copia o trabajo derivado autorizado debe conservar
+   este aviso, el archivo NOTICE.md y el sello «Hecho por MerakiLabs» de la
+   interfaz, salvo acuerdo escrito con MerakiLabs.
+
+5. MARCAS. «MerakiLabs» y su logo son marcas de su autor; esta licencia no
+   concede derecho alguno sobre ellas fuera del reconocimiento del punto 4.
+
+6. SIN DATOS DE PERSONAS. Este repositorio no debe contener datos personales
+   reales ni secretos. Las credenciales se entregan por variables de entorno y
+   secretos del proveedor, nunca en el código.
+
+7. SIN GARANTÍA. El software se entrega «tal cual», sin garantías de ningún
+   tipo. Los autores no responden por daños derivados de su uso, en la medida
+   que la ley lo permita.
+
+8. LEY APLICABLE. Se rige por las leyes de la República de Chile.

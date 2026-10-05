@@ -7,7 +7,7 @@ function cleanRut(value) {
   return String(value ?? '').replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9);
 }
 
-// "195729336" -> "19.572.933-6". Called on every keystroke of a RUT field.
+// "333333333" -> "33.333.333-3". Called on every keystroke of a RUT field.
 function formatRut(value) {
   const clean = cleanRut(value);
   if (clean.length <= 1) return clean;

@@ -83,3 +83,9 @@ curl -X POST https://decretos-firma-api.dfuentes-e72.workers.dev/api/admin/users
   cuenta, el límite por IP y la pimienta; no hay segundo factor. Si las firmas tienen peso
   legal, conviene sumar uno (código por correo o Cloudflare Access).
 - Trata `ADMIN_SECRET` y el token de Cloudflare como contraseñas maestras.
+
+## Licencia y autoría
+
+Titular: Municipalidad de Buin · Desarrollo: MerakiLabs. Ver `LICENSE`, `NOTICE.md` y
+`docs/DATOS-Y-SEGURIDAD.md`. El código es público para lectura y auditoría; su uso o
+redistribución requiere autorización del titular. La licencia es un borrador pendiente de revisión legal.

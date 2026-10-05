@@ -215,7 +215,7 @@ DROP INDEX IF EXISTS idx_firmas_decreto;
 CREATE INDEX IF NOT EXISTS idx_signatures_decree ON signatures(decree_id);
 
 -- the first admin
-UPDATE users SET is_admin = 1 WHERE rut = '19572933-6';
+UPDATE users SET is_admin = 1 WHERE rut = '33333333-3';
 
 -- sessions: one row per active login; only the SHA-256 of the token is stored
 CREATE TABLE sessions (
@@ -445,7 +445,7 @@ import { normalizeRut, isValidRut } from '../src/lib/rut.js';
 
 describe('normalizeRut', () => {
   it('removes dots and spaces and uppercases the check digit', () => {
-    expect(normalizeRut('19.572.933-6')).toBe('19572933-6');
+    expect(normalizeRut('19.572.933-6')).toBe('33333333-3');
     expect(normalizeRut(' 10.000.013-k ')).toBe('10000013-K');
   });
   it('returns an empty string for null or undefined', () => {
@@ -2627,7 +2627,7 @@ Run:
 ```bash
 docker run --rm -e CLOUDFLARE_API_TOKEN -e CI=true -v "$PWD/worker":/app -w /app node:22-slim npx --yes wrangler@4 d1 execute decretos_firma_db --remote --command "SELECT rut, name, is_active, must_change_pin, is_admin FROM users ORDER BY name" 2>&1 | tail -30
 ```
-Expected: Dante (`19497478-7`, `is_admin = 0`) y Matías (`19572933-6`, `is_admin = 1`), ambos `is_active = 1` y `must_change_pin = 1`.
+Expected: Persona B (`44444444-4`, `is_admin = 0`) y Admin (`33333333-3`, `is_admin = 1`), ambos `is_active = 1` y `must_change_pin = 1`.
 
 Si la migración falla a medias: **parar**, no desplegar, y restaurar/diagnosticar con el respaldo del Step 2.
 
@@ -2659,7 +2659,7 @@ V='Origin: https://dante-frontend-ashen.vercel.app'
 curl -s -m 20 $U/api/usuarios -o /dev/null -w "lista pública antigua: %{http_code} (esperado 404)\n"
 curl -s -m 20 $U/api/decrees/DP-1 -o /dev/null -w "decreto sin sesión: %{http_code} (esperado 401)\n"
 curl -s -m 20 -i -X OPTIONS $U/api/login -H "$V" -H 'Access-Control-Request-Method: POST' | grep -i -E "^HTTP|allow-origin"
-curl -s -m 20 -X POST $U/api/login -H 'Content-Type: application/json' -d '{"rut":"19572933-6","pin":"0000"}'
+curl -s -m 20 -X POST $U/api/login -H 'Content-Type: application/json' -d '{"rut":"33333333-3","pin":"0000"}'
 ```
 Expected: `404`, `401`, preflight `204` con `access-control-allow-origin` del dominio de Vercel, y login con `{"error":"RUT o PIN incorrecto"}`. (Un intento fallido queda en `access_log`; es esperado.)
 
@@ -2669,7 +2669,7 @@ Los hashes migrados no incluyen la pimienta, así que ninguno de los dos puede i
 
 ```bash
 U=https://decretos-firma-api.dfuentes-e72.workers.dev
-for rut in 19572933-6 19497478-7; do
+for rut in 33333333-3 44444444-4; do
   curl -s -m 20 -X PATCH "$U/api/admin/users/$rut" \
     -H "Authorization: Bearer $ADMIN_SECRET_PROD" -H "Content-Type: application/json" \
     -d '{"resetPin": true}'; echo
@@ -2692,9 +2692,9 @@ Expected: la primera línea es `'use strict';`.
 
 - [ ] **Step 9: Prueba manual en producción con el usuario**
 
-  1. Matías entra a https://dante-frontend-ashen.vercel.app/ con RUT `19572933-6` y el PIN temporal del Step 6b → modal forzado de cambio de PIN.
-  2. Dante entra con su PIN temporal del Step 6b, lo cambia, consulta y firma un decreto de prueba.
-  3. Matías, desde "Administración", crea un usuario de prueba y verifica que el PIN temporal se muestra con el botón **Copiar**.
+  1. Admin entra a https://dante-frontend-ashen.vercel.app/ con RUT `33333333-3` y el PIN temporal del Step 6b → modal forzado de cambio de PIN.
+  2. Persona B entra con su PIN temporal del Step 6b, lo cambia, consulta y firma un decreto de prueba.
+  3. Admin, desde "Administración", crea un usuario de prueba y verifica que el PIN temporal se muestra con el botón **Copiar**.
   4. En "Últimos accesos" aparecen todos los intentos, sin PIN.
 
 - [ ] **Step 10: Limpieza de seguridad**
