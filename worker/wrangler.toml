@@ -5,8 +5,5 @@ compatibility_date = "2026-08-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "decretos_firma_db"
-# Para probar SOLO en local no hace falta un ID real ni estar logueado:
-# cualquier UUID sirve, Wrangler lo usa nomás como nombre de archivo local.
-# Cuando despliegues de verdad, reemplázalo por el que te entrega
-# "wrangler d1 create" (eso sí requiere estar logueado).
 database_id = "9c078beb-7465-41f5-93c3-3d076306b0ad"
+migrations_dir = "migrations"

@@ -1,15 +1,18 @@
 # Entorno local 100% en Docker: nada se instala en tu máquina.
-#   docker compose up -d        -> API en :8787, frontend en :8080
-#   docker compose down -v      -> borra todo (contenedores + base local)
+#   docker compose up -d                 -> API en :8787, frontend en :8080
+#   docker compose run --rm test         -> corre las pruebas del Worker
+#   docker compose down -v               -> borra todo (contenedores + base local)
 services:
   api:
-    image: node:22-slim
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
     working_dir: /app/worker
     volumes:
       - ./worker:/app/worker
+      - worker-node-modules:/app/worker/node_modules
       # El estado local de D1 vive en un volumen, no en tu carpeta.
       - wrangler-state:/app/worker/.wrangler
-      - npm-cache:/root/.npm
     ports:
       - "8787:8787"
     environment:
@@ -17,8 +20,24 @@ services:
       WRANGLER_SEND_METRICS: "false"
       ADMIN_SECRET: "un-secreto-cualquiera-para-pruebas-locales"
     command: >
-      sh -c "npx --yes wrangler@4 d1 execute decretos_firma_db --local --file=./schema.sql &&
-             npx --yes wrangler@4 dev --ip 0.0.0.0 --port 8787 --var ADMIN_SECRET:$$ADMIN_SECRET"
+      sh -c "npm install --no-audit --no-fund &&
+             npx wrangler d1 migrations apply decretos_firma_db --local &&
+             npx wrangler dev --ip 0.0.0.0 --port 8787 --var ADMIN_SECRET:$$ADMIN_SECRET"
+
+  test:
+    profiles: ["test"]
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    working_dir: /app/worker
+    volumes:
+      - ./worker:/app/worker
+      - worker-node-modules:/app/worker/node_modules
+      - test-wrangler:/app/worker/.wrangler
+    environment:
+      CI: "true"
+      WRANGLER_SEND_METRICS: "false"
+    command: sh -c "npm install --no-audit --no-fund && npx vitest run"
 
   web:
     image: nginx:alpine
@@ -29,4 +48,5 @@ services:
 
 volumes:
   wrangler-state:
-  npm-cache:
+  worker-node-modules:
+  test-wrangler:
